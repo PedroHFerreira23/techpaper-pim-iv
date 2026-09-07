@@ -42,7 +42,7 @@ app.Use(async(ctx,next)=> {
   ctx.Response.Headers.CacheControl="no-store";
   if(!HttpMethods.IsGet(ctx.Request.Method) && !HttpMethods.IsHead(ctx.Request.Method)) {
    var origin=ctx.Request.Headers.Origin.ToString();
-   if(!ctx.Request.Headers.ContainsKey("X-TechPaper-Client") || (origin.Length>0 && origin!=$"{ctx.Request.Scheme}://{ctx.Request.Host}")) {
+   if(!((ctx.Request.Headers["X-TechPaper-Client"]=="mobile" && origin.Length==0) || (Uri.TryCreate(origin,UriKind.Absolute,out var originUri) && string.Equals(originUri.Authority,ctx.Request.Host.Value,StringComparison.OrdinalIgnoreCase)))) {
     ctx.Response.StatusCode=403;await ctx.Response.WriteAsJsonAsync(new {message="Origem da requisição não permitida."});return;
    }
   }
