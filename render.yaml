@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: techpaper-pim-iv
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DatabaseInit__Enabled
+        value: "true"
+      - key: DatabaseInit__DemoData
+        value: "true"
+      - key: Bootstrap__Enabled
+        value: "true"
+      - key: Bootstrap__Login
+        sync: false
+      - key: Bootstrap__Password
+        sync: false

@@ -1,0 +1,34 @@
+@host = http://localhost:5108
+@token = substitua-pelo-accessToken-retornado-no-login-mobile
+
+### Saúde da API
+GET {{host}}/health/ready
+
+### Login do cliente mobile
+POST {{host}}/api/usuarios/login
+Content-Type: application/json
+X-TechPaper-Client: mobile
+
+{
+  "login": "admin@example.com",
+  "password": "substitua-pela-senha-local"
+}
+
+### Consultar produtos
+GET {{host}}/api/produtos
+Authorization: Bearer {{token}}
+X-TechPaper-Client: mobile
+
+### Criar movimentação com identificação única
+POST {{host}}/api/movimentacoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+X-TechPaper-Client: mobile
+
+{
+  "produtoId": 1,
+  "tipo": "Entrada",
+  "quantidade": 10,
+  "motivo": "Reposição de demonstração",
+  "chaveOperacao": "c5f523a9-36f4-4c38-af9f-7ae7c17f31f6"
+}

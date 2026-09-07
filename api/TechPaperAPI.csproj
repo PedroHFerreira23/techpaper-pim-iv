@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <EmbeddedResource Include="..\database\001_schema.sql" Link="DatabaseScripts\001_schema.sql" />
+    <EmbeddedResource Include="..\database\002_routines.sql" Link="DatabaseScripts\002_routines.sql" />
+    <EmbeddedResource Include="..\database\003_demo.sql" Link="DatabaseScripts\003_demo.sql" />
+  </ItemGroup>
+</Project>

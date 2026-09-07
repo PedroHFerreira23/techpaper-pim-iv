@@ -1,0 +1,1 @@
+{"expo":{"name":"TechPaper","slug":"techpaper-mobile","version":"1.0.0","orientation":"default","userInterfaceStyle":"light","plugins":["expo-secure-store"],"android":{"package":"com.techpaper.mobile"},"ios":{"bundleIdentifier":"com.techpaper.mobile","supportsTablet":true}}}

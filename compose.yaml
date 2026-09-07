@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-techpaper_pim4}
+      POSTGRES_USER: ${POSTGRES_USER:-techpaper}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure .env}
+    volumes:
+      - techpaper_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-techpaper} -d ${POSTGRES_DB:-techpaper_pim4}"]
+      interval: 5s
+      retries: 30
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports: ["8080:8080"]
+    environment:
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-techpaper_pim4};Username=${POSTGRES_USER:-techpaper};Password=${POSTGRES_PASSWORD:?Configure .env}
+      DatabaseInit__Enabled: 'true'
+      DatabaseInit__DemoData: 'true'
+      Bootstrap__Enabled: 'true'
+      Bootstrap__Login: ${BOOTSTRAP_LOGIN:?Configure .env}
+      Bootstrap__Password: ${BOOTSTRAP_PASSWORD:?Configure .env}
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  techpaper_data:
