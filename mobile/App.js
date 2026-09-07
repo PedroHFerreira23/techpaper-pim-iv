@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
@@ -7,6 +7,8 @@ import * as Crypto from 'expo-crypto';
 import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
 
 const money = value => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const parseApiDate = value => { if (!value) return null; let text = String(value).trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00').replace(/([+-]\d{2})(\d{2})$/, '$1:$2'); if (!/(?:z|[+-]\d{2}:?\d{2})$/i.test(text)) text += 'Z'; const date = new Date(text); return Number.isNaN(date.getTime()) ? null : date; };
+const formatDateTime = value => { const date = parseApiDate(value); return date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'Data não informada'; };
 const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Conta'];
 function Button({ title, onPress, disabled, secondary = false }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} disabled={disabled} onPress={onPress} style={[s.button, secondary && s.secondary, disabled && s.disabled]}><Text style={[s.buttonText, secondary && s.secondaryText]}>{title}</Text></Pressable>;
@@ -121,7 +123,7 @@ function TechPaper() {
   </>;
   if (loading) return <SafeAreaView style={s.screen}><ActivityIndicator size="large" accessibilityLabel="Abrindo TechPaper" /></SafeAreaView>;
   if (!session) return <SafeAreaView style={s.screen}><StatusBar style="dark" /><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-    <Text style={s.brand}>TECHPAPER</Text><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
+    <View style={s.brandRow}><Image source={require('./assets/icon-v2.png')} style={s.logo} accessibilityLabel="Símbolo TechPaper" /><View><Text style={s.brand}>TechPaper</Text><Text style={s.brandCaption}>GESTÃO INTELIGENTE</Text></View></View><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <Card><Field label="Endereço do servidor" value={url} onChangeText={setUrl} autoCapitalize="none" keyboardType="url" placeholder="https://seu-servidor" />
       <Field label="E-mail" value={login} onChangeText={setLogin} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
@@ -129,7 +131,7 @@ function TechPaper() {
       <Button title={busy ? 'Entrando…' : 'Entrar'} onPress={enter} disabled={busy || !login || !password || !url} />
     </Card><Text style={s.muted}>As credenciais de acesso são fornecidas pelo administrador da papelaria.</Text>
   </ScrollView></KeyboardAvoidingView></SafeAreaView>;
-  return <SafeAreaView style={s.screen}><StatusBar style="dark" /><View style={s.header}><Text style={s.brand}>TECHPAPER</Text><Text style={s.muted}>{session.user.name}</Text></View>
+  return <SafeAreaView style={s.screen}><StatusBar style="dark" /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/icon-v2.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><Text style={s.muted}>{session.user.name}</Text></View>
     <View style={s.sync}><Text style={s.muted}>{lastSync ? `Atualizado ${lastSync.toLocaleTimeString('pt-BR')}` : 'Aguardando sincronização'}</Text><Pressable accessibilityRole="button" onPress={() => sync()} disabled={refreshing || busy} style={s.refresh}><Text style={s.link}>{refreshing ? 'Atualizando…' : 'Atualizar'}</Text></Pressable></View>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => sync()} />}>
@@ -145,7 +147,7 @@ function TechPaper() {
         <Card><Text style={s.subtitle}>Registrar movimentação</Text>
           {pending ? <><Text style={s.notice}>Uma operação aguarda confirmação. A nova tentativa usa a mesma identificação para evitar duplicidade.</Text><Text>{pending.tipo} · {pending.quantidade} unidade(s) · Produto #{pending.produtoId}</Text></> : <>{picker}<View style={s.actions}>{['Entrada', 'Saida'].map(t => <Button key={t} title={`${tipo === t ? '✓ ' : ''}${t === 'Saida' ? 'Saída' : t}`} secondary={tipo !== t} onPress={() => setTipo(t)} />)}</View><Field label="Quantidade" value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" /><Field label="Motivo" value={motivo} onChangeText={setMotivo} maxLength={100} /></>}
           <Button title={busy ? 'Confirmando…' : pending ? 'Tentar confirmar novamente' : 'Confirmar movimentação'} onPress={move} disabled={busy || refreshing} />
-        </Card><Text style={s.subtitle}>Últimas movimentações</Text>{data.movimentacoes.slice(0, 30).map(m => <Card key={m.id}><Text style={s.label}>{m.tipo === 'Saida' ? 'Saída' : 'Entrada'} · {m.quantidade} × {m.produtoNome}</Text><Text>{m.motivo}</Text><Text style={s.muted}>{m.responsavel} · {new Date(m.dataHora + (m.dataHora.endsWith('Z') ? '' : 'Z')).toLocaleString('pt-BR')}</Text></Card>)}
+        </Card><Text style={s.subtitle}>Últimas movimentações</Text>{data.movimentacoes.slice(0, 30).map(m => <Card key={m.id}><Text style={s.label}>{m.tipo === 'Saida' ? 'Saída' : 'Entrada'} · {m.quantidade} × {m.produtoNome}</Text><Text>{m.motivo}</Text><Text style={s.muted}>{m.responsavel} · {formatDateTime(m.dataHora)}</Text></Card>)}
       </>}
       {tab === 'Orçamentos' && <>
         <Card><Text style={s.subtitle}>Novo orçamento</Text><Field label="Cliente" value={cliente} onChangeText={setCliente} maxLength={150} /><Field label="Validade (AAAA-MM-DD)" value={validade} onChangeText={setValidade} maxLength={10} />{picker}
@@ -163,7 +165,7 @@ function TechPaper() {
 const s = StyleSheet.create({
   flex: { flex: 1 }, screen: { flex: 1, backgroundColor: '#F1F5F9' }, content: { padding: 20, gap: 16, paddingBottom: 36 },
   header: { paddingHorizontal: 20, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  brand: { fontSize: 17, fontWeight: '900', color: '#123C60', letterSpacing: 2 }, title: { fontSize: 30, fontWeight: '800', color: '#123047', marginTop: 12 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 }, logo: { width: 72, height: 72 }, logoSmall: { width: 38, height: 38 }, brand: { fontSize: 20, fontWeight: '900', color: '#123C60', letterSpacing: .5 }, brandCaption: { fontSize: 10, fontWeight: '700', color: '#52748B', letterSpacing: 1.4 }, title: { fontSize: 30, fontWeight: '800', color: '#123047', marginTop: 12 },
   subtitle: { fontSize: 21, fontWeight: '700', color: '#123047', marginBottom: 8 }, muted: { fontSize: 14, color: '#465C6C', lineHeight: 21 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 20, gap: 12, borderWidth: 1, borderColor: '#DCE5EC' },
   field: { gap: 6, marginBottom: 8 }, label: { fontSize: 16, fontWeight: '600', color: '#18384F' }, input: { borderWidth: 1, borderColor: '#778D9E', padding: 13, minHeight: 48, borderRadius: 9, fontSize: 17, color: '#122E43', backgroundColor: '#FFFFFF' },
