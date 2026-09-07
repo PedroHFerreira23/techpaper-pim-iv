@@ -10,7 +10,7 @@ Continuação programável do TechPaper apresentado no PIM III. O pacote reúne 
 - Estoque com entradas, saídas, histórico imutável, auditoria e proteção contra saldo negativo.
 - Repetição segura de movimentações quando web ou mobile não recebem a confirmação da primeira tentativa.
 - Orçamentos com itens, preços e totais calculados no servidor, estados e controle de alterações simultâneas.
-- Portal web responsivo com relatórios CSV e impressão/PDF.
+- Portal web responsivo com identidade TechPaper, gráficos de estoque e movimentações, painel de indicadores, VLibras, relatórios CSV e impressão/PDF.
 - Aplicativo Expo/React Native em JavaScript com login, produtos, estoque, orçamentos, sincronização e sessão no armazenamento seguro do aparelho.
 - Script completo do banco, quatro funções armazenadas, três triggers, índices e consultas de verificação.
 - Containerização e pipeline de validação.
@@ -67,9 +67,10 @@ O bootstrap cria o primeiro administrador apenas quando `usuarios` está vazia. 
 - Seis testes da comunicação mobile aprovados.
 - Dependências verificadas pelo Expo: atualizadas para o SDK 57.
 - PostgreSQL descartável criado e conferido com oito tabelas, quatro funções, três triggers e índices.
-- Portal verificado no navegador: login, painel e criação de orçamento com cálculo confirmado pelo servidor.
+- Portal verificado no navegador: login, painel, gráficos, VLibras e movimentação com data e hora de Brasília.
+- Aplicativo exportado pelo Expo para Android com os novos ícone e tela de abertura.
 
-O empacotamento Android chegou à etapa do Metro, mas o gerador Hermes não pôde iniciar no ambiente restrito usado nesta preparação. Isso é uma limitação da validação local, não um erro de JavaScript identificado. Rode `pnpm export:android` ou inicie o Expo em um ambiente normal antes da apresentação.
+O pacote Android de instalação deve ser gerado pelo perfil `preview` do EAS, conforme `docs/FINALIZACAO_ANDROID_E_NUVEM.md`.
 
 ## Uso acadêmico
 
