@@ -69,6 +69,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(status,200,first)
         self.assertEqual(first['responsavelId'],self.operator_user['id'])
         self.assertEqual(first['responsavel'],'Operador Teste')
+        self.assertIsNotNone(datetime.datetime.fromisoformat(first['dataHora'].replace('Z','+00:00')).tzinfo)
         status,again=request('movimentacoes','POST',body,self.operator)
         self.assertEqual(status,200,again);self.assertEqual(first['id'],again['id'])
         self.assertEqual(request('produtos/'+str(p['id']),token=self.admin)[1]['estoque'],10)
