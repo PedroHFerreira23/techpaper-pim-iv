@@ -10,6 +10,7 @@
 .env
 *.apk
 *.aab
+*.zip
 manual_pim_iv_extraido.txt
 pim3_extraido.txt
 **/.expo-local-user/
