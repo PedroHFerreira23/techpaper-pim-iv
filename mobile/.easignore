@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist-test/
+.tool-cache/
+.pnpm-home/
+.appdata/
+.localappdata/
+.expo-local-user/
+*.apk
+*.aab
+npm-debug.log*
+pnpm-debug.log*

@@ -27,7 +27,7 @@ function el(tag,props={},...children) {
 }
 const button=(text,click,cls='')=>el('button',{type:'button',class:cls,onclick:click},text);
 const icon=className=>el('i',{class:`fa-solid ${className}`,'aria-hidden':'true'});
-const brandLockup=(tagline='Sistema de Gestão')=>el('div',{class:'brand-lockup'},el('img',{class:'brand-logo',src:'assets/techpaper-logo-v2.png',alt:'Símbolo TechPaper'}),el('div',{},el('div',{class:'brand'},'TechPaper'),el('small',{},tagline)));
+const brandLockup=(tagline='Sistema de Gestão')=>el('div',{class:'brand-lockup'},el('img',{class:'brand-logo',src:'assets/techpaper-logo-v3.png',alt:'Símbolo TechPaper'}),el('div',{},el('div',{class:'brand'},'TechPaper'),el('small',{},tagline)));
 async function api(path,options={}) {
  const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
  try {

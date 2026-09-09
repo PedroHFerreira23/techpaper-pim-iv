@@ -1,1 +1,35 @@
-{"expo":{"name":"TechPaper","slug":"techpaper-mobile","version":"1.1.0","orientation":"default","userInterfaceStyle":"light","icon":"./assets/icon-v2.png","splash":{"image":"./assets/splash-v2.png","resizeMode":"contain","backgroundColor":"#12374e"},"plugins":["expo-secure-store"],"android":{"package":"com.techpaper.mobile","adaptiveIcon":{"foregroundImage":"./assets/adaptive-icon-v2.png","backgroundColor":"#f2f5f9"}},"ios":{"bundleIdentifier":"com.techpaper.mobile","supportsTablet":true}}}
+{
+  "expo": {
+    "name": "TechPaper",
+    "slug": "techpaper-mobile",
+    "version": "1.2.0",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon-v3.png",
+    "splash": {
+      "image": "./assets/splash-v3.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#12374e"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "android": {
+      "package": "com.techpaper.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon-v3.png",
+        "backgroundColor": "#f7f4ea"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.techpaper.mobile",
+      "supportsTablet": true
+    },
+    "owner": "pdreoss-team",
+    "extra": {
+      "eas": {
+        "projectId": "791a9ead-c9f2-4a63-960e-581b61af5ebf"
+      }
+    }
+  }
+}

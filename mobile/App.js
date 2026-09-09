@@ -7,7 +7,16 @@ import * as Crypto from 'expo-crypto';
 import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
 
 const money = value => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const parseApiDate = value => { if (!value) return null; let text = String(value).trim().replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00').replace(/([+-]\d{2})(\d{2})$/, '$1:$2'); if (!/(?:z|[+-]\d{2}:?\d{2})$/i.test(text)) text += 'Z'; const date = new Date(text); return Number.isNaN(date.getTime()) ? null : date; };
+const parseApiDate = value => {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number') { const date = new Date(value < 1e12 ? value * 1000 : value); return Number.isNaN(date.getTime()) ? null : date; }
+  let text = String(value).trim();
+  const brazilian = text.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ ,T]+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (brazilian) { const [, day, month, year, hour = '00', minute = '00', second = '00'] = brazilian; const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}-03:00`); return Number.isNaN(date.getTime()) ? null : date; }
+  text = text.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  if (!/(?:z|[+-]\d{2}:?\d{2})$/i.test(text)) text += 'Z';
+  const date = new Date(text); return Number.isNaN(date.getTime()) ? null : date;
+};
 const formatDateTime = value => { const date = parseApiDate(value); return date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'Data não informada'; };
 const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Conta'];
 function Button({ title, onPress, disabled, secondary = false }) {
@@ -19,7 +28,7 @@ function Field({ label, ...props }) {
 function Card({ children }) { return <View style={s.card}>{children}</View>; }
 export default function App() { return <SafeAreaProvider><TechPaper /></SafeAreaProvider>; }
 function TechPaper() {
-  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_API_URL || '');
+  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_API_URL || 'https://techpaper-pim-iv.onrender.com');
   const [login, setLogin] = useState(''); const [password, setPassword] = useState('');
   const [session, setSession] = useState(null); const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false); const lock = useRef(false); const syncing = useRef(false);
@@ -123,7 +132,7 @@ function TechPaper() {
   </>;
   if (loading) return <SafeAreaView style={s.screen}><ActivityIndicator size="large" accessibilityLabel="Abrindo TechPaper" /></SafeAreaView>;
   if (!session) return <SafeAreaView style={s.screen}><StatusBar style="dark" /><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-    <View style={s.brandRow}><Image source={require('./assets/icon-v2.png')} style={s.logo} accessibilityLabel="Símbolo TechPaper" /><View><Text style={s.brand}>TechPaper</Text><Text style={s.brandCaption}>GESTÃO INTELIGENTE</Text></View></View><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
+    <View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logo} accessibilityLabel="Símbolo TechPaper" /><View><Text style={s.brand}>TechPaper</Text><Text style={s.brandCaption}>GESTÃO INTELIGENTE</Text></View></View><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <Card><Field label="Endereço do servidor" value={url} onChangeText={setUrl} autoCapitalize="none" keyboardType="url" placeholder="https://seu-servidor" />
       <Field label="E-mail" value={login} onChangeText={setLogin} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
@@ -131,7 +140,7 @@ function TechPaper() {
       <Button title={busy ? 'Entrando…' : 'Entrar'} onPress={enter} disabled={busy || !login || !password || !url} />
     </Card><Text style={s.muted}>As credenciais de acesso são fornecidas pelo administrador da papelaria.</Text>
   </ScrollView></KeyboardAvoidingView></SafeAreaView>;
-  return <SafeAreaView style={s.screen}><StatusBar style="dark" /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/icon-v2.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><Text style={s.muted}>{session.user.name}</Text></View>
+  return <SafeAreaView style={s.screen}><StatusBar style="dark" /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><Text style={s.muted}>{session.user.name}</Text></View>
     <View style={s.sync}><Text style={s.muted}>{lastSync ? `Atualizado ${lastSync.toLocaleTimeString('pt-BR')}` : 'Aguardando sincronização'}</Text><Pressable accessibilityRole="button" onPress={() => sync()} disabled={refreshing || busy} style={s.refresh}><Text style={s.link}>{refreshing ? 'Atualizando…' : 'Atualizar'}</Text></Pressable></View>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => sync()} />}>
