@@ -15,6 +15,7 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Endereço publicado: `https://techpaper-pim-iv.onrender.com`.
 - Funções: login, visão geral, gráficos, produtos, fornecedores, estoque, orçamentos, usuários e relatórios.
 - Acessibilidade: navegação por teclado, textos alternativos e recurso VLibras.
+- Inclusão visual: tema claro/escuro e seis avatares sincronizados pela conta.
 
 ### API
 
@@ -31,8 +32,9 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Segurança: o token da sessão fica no Expo SecureStore e a senha é apagada depois do login.
 - Sincronização: ocorre no login, ao tocar em Atualizar, ao puxar a tela e ao retornar ao aplicativo.
 - Proteção de estoque: cada movimentação recebe uma identificação única para impedir lançamentos duplicados quando a conexão falha.
-- Versão atual: 1.2.0.
-- Página do APK: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/0def36cb-00cd-4cf4-9a72-2679123dca63`.
+- Preferências: tema e avatar escolhidos na tela Conta permanecem associados ao usuário.
+- Versão atual do código: 1.3.0.
+- Página do APK: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6`.
 
 ### Banco de dados
 
@@ -41,8 +43,8 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Script principal: `database/000_banco_completo.sql`.
 - Script de conferência: `database/004_verificacao.sql`.
 - Tabelas: usuarios, fornecedores, produtos, movimentacoes, sessoes, orcamentos, itens_orcamento e auditoria_estoque.
-- Funções: `sp_registrar_movimentacao` e `sp_resumo_estoque`.
-- Gatilhos: registram auditoria e impedem edição ou exclusão do histórico de movimentações.
+- Funções principais: `sp_registrar_movimentacao` e `sp_resumo_estoque`.
+- Gatilhos: atualizam o estoque, registram auditoria e impedem edição ou exclusão do histórico de movimentações.
 - Concorrência: a função de movimentação bloqueia o produto durante a alteração para impedir estoque negativo em solicitações simultâneas.
 
 ## Serviços utilizados
@@ -65,7 +67,7 @@ Organiza o projeto React Native e permite executar o aplicativo durante o desenv
 
 ### EAS Build
 
-Serviço do Expo que compilou o código mobile e gerou o APK Android assinado. A compilação 1.2.0 terminou com sucesso.
+Serviço do Expo que compilou o código mobile e gerou o APK Android assinado. A compilação 1.3.0 foi gerada com os recursos de tema, avatar e acessibilidade.
 
 ### Expo SecureStore
 
@@ -87,9 +89,10 @@ O portal e o aplicativo agora reconhecem datas ISO, valores com fuso horário e 
 
 - Compilação da API: concluída com 0 erros e 0 avisos.
 - Testes do módulo JavaScript mobile: 6 aprovados.
+- Testes de integração da versão atual: 10 aprovados, incluindo preferências, concorrência e trigger de estoque.
 - APK: compilado com sucesso pelo EAS Build.
 - Documento acadêmico: 21 páginas revisadas visualmente.
-- Versões anteriores também executaram 9 testes de integração com banco descartável, incluindo concorrência, saldo insuficiente, repetição segura, permissões, orçamento e logout.
+- A trigger também foi verificada por uma inserção SQL direta, com alteração exata do saldo e rollback do teste.
 
 ## Texto acadêmico
 

@@ -2,6 +2,7 @@
 **/obj/
 **/node_modules/
 **/.expo/
+**/.expo-test-export/
 **/dist-test*/
 **/.tool-cache/
 **/.pnpm-home/

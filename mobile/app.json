@@ -2,9 +2,9 @@
   "expo": {
     "name": "TechPaper",
     "slug": "techpaper-mobile",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "default",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/icon-v3.png",
     "splash": {
       "image": "./assets/splash-v3.png",
@@ -16,6 +16,7 @@
     ],
     "android": {
       "package": "com.techpaper.mobile",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-v3.png",
         "backgroundColor": "#f7f4ea"

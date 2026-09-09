@@ -14,7 +14,7 @@ A API executa `001_schema.sql` e `002_routines.sql` ao iniciar. O arquivo consol
 
 ## Estrutura entregue
 
-- `usuarios`: autenticação, perfil e estado ativo;
+- `usuarios`: autenticação, perfil, estado ativo, tema e avatar escolhido;
 - `fornecedores`: dados cadastrais e prazo;
 - `produtos`: catálogo, preços e saldo;
 - `movimentacoes`: histórico imutável de entradas e saídas;
@@ -23,4 +23,7 @@ A API executa `001_schema.sql` e `002_routines.sql` ao iniciar. O arquivo consol
 - `auditoria_estoque`: saldo anterior e saldo posterior;
 - `sp_registrar_movimentacao`: transação com bloqueio de linha, validações e idempotência;
 - `sp_resumo_estoque`: consulta dos produtos que precisam de reposição;
+- `TRG_ATUALIZA_ESTOQUE`: atualiza o saldo após cada inserção de movimentação;
 - gatilhos de auditoria e de imutabilidade do histórico.
+
+O projeto implantado usa PostgreSQL no Neon. Por isso, `BOOLEAN`, funções `plpgsql` e a sintaxe de trigger do PostgreSQL substituem `BIT` e comandos próprios do SQL Server citados no roteiro auxiliar.

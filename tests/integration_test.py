@@ -120,4 +120,12 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(results[0][1]['id'],results[1][1]['id'])
         self.assertEqual(request('produtos/'+str(p['id']),token=self.admin)[1]['estoque'],6)
 
+    def test_10_own_visual_preferences(self):
+        status,user=request('usuarios/me/preferencias','PATCH',{'temaEscuro':True,'avatarId':5},self.operator)
+        self.assertEqual(status,200,user)
+        self.assertTrue(user['temaEscuro']);self.assertEqual(user['avatarId'],5)
+        status,me=request('usuarios/me',token=self.operator)
+        self.assertEqual(status,200,me);self.assertTrue(me['temaEscuro']);self.assertEqual(me['avatarId'],5)
+        self.assertEqual(request('usuarios/me/preferencias','PATCH',{'temaEscuro':False,'avatarId':7},self.operator)[0],400)
+
 if __name__=='__main__': unittest.main(verbosity=2)

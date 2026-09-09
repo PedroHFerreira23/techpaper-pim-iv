@@ -9,6 +9,23 @@ END $$;
 DROP TRIGGER IF EXISTS tr_produto_auditoria ON produtos;
 CREATE TRIGGER tr_produto_auditoria AFTER UPDATE ON produtos FOR EACH ROW EXECUTE PROCEDURE tr_produto_auditoria_fn();
 
+-- Regra central de estoque: qualquer INSERT válido em movimentacoes altera o saldo
+-- exatamente uma vez, inclusive quando o registro for criado fora da API.
+CREATE OR REPLACE FUNCTION trg_atualiza_estoque_fn() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW."Tipo"='Entrada' THEN
+  UPDATE produtos SET "Estoque"="Estoque"+NEW."Quantidade" WHERE "Id"=NEW."ProdutoId";
+ ELSE
+  UPDATE produtos SET "Estoque"="Estoque"-NEW."Quantidade"
+   WHERE "Id"=NEW."ProdutoId" AND "Estoque">=NEW."Quantidade";
+  IF NOT FOUND THEN RAISE EXCEPTION 'Estoque insuficiente.'; END IF;
+ END IF;
+ RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS "TRG_ATUALIZA_ESTOQUE" ON movimentacoes;
+CREATE TRIGGER "TRG_ATUALIZA_ESTOQUE" AFTER INSERT ON movimentacoes
+ FOR EACH ROW EXECUTE PROCEDURE trg_atualiza_estoque_fn();
+
 CREATE OR REPLACE FUNCTION tr_movimento_imutavel_fn() RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN RAISE EXCEPTION 'Histórico imutável. Registre uma movimentação compensatória.'; END $$;
 DROP TRIGGER IF EXISTS tr_movimento_sem_edicao ON movimentacoes;
@@ -35,7 +52,8 @@ BEGIN
  SELECT "Name","Login" INTO v_usuario,v_login FROM usuarios WHERE "Id"=p_usuario AND "Ativo"=TRUE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Usuário inexistente ou inativo.';END IF;
  IF p_tipo='Saida' AND v_saldo<p_quantidade THEN RAISE EXCEPTION 'Estoque insuficiente.';END IF;
- UPDATE produtos SET "Estoque"="Estoque"+CASE WHEN p_tipo='Entrada' THEN p_quantidade ELSE -p_quantidade END WHERE "Id"=p_produto;
+ -- A alteração do saldo pertence à TRG_ATUALIZA_ESTOQUE. Mantê-la fora desta
+ -- função evita duplicidade e garante a mesma regra para toda origem de INSERT.
  INSERT INTO movimentacoes("Tipo","ProdutoId","ProdutoNome","Quantidade","Motivo","Responsavel","UsuarioId","ResponsavelId","ChaveOperacao","DataHora")
  VALUES(p_tipo,p_produto,v_nome,p_quantidade,p_motivo,v_usuario,v_login,p_usuario,p_chave,CURRENT_TIMESTAMP) RETURNING "Id" INTO v_id;
  RETURN v_id;

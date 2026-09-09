@@ -27,6 +27,15 @@ public class UsuariosController(AppDbContext db,IPasswordHasher<Usuario> hasher)
   return Ok(new {usuario=u,accessToken=mobile?token:null,expiraEm=expiry});
  }
  [HttpGet("me")] public async Task<IActionResult> Me()=>Ok(await db.Usuarios.FindAsync(int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)));
+ // PATCH limita a escrita às preferências do próprio usuário autenticado.
+ // Nome, perfil, senha e situação da conta continuam protegidos pelos fluxos administrativos.
+ [HttpPatch("me/preferencias")]
+ public async Task<IActionResult> PatchPreferencias(PreferenciasUsuarioRequest r) {
+  var id=int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+  var u=await db.Usuarios.FindAsync(id);if(u is null||!u.Ativo)return NotFound();
+  u.TemaEscuro=r.TemaEscuro;u.AvatarId=r.AvatarId;
+  await db.SaveChangesAsync();return Ok(u);
+ }
  [HttpPost("logout")] public async Task<IActionResult> Logout() {
   var token=SessionAuthentication.Token(Request);if(token is not null) {var hash=SessionAuthentication.Hash(token);await db.Sessoes.Where(x=>x.TokenHash==hash).ExecuteDeleteAsync();}
   Response.Cookies.Delete("techpaper_session");return NoContent();

@@ -2,6 +2,14 @@
 const $ = s => document.querySelector(s);
 const app = $('#app'); const modal = $('#modal'); const content = $('#modal-content');
 const state = { user: null, page: 'Visão geral', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], lastSync: null };
+const avatars=[
+ {id:1,symbol:'🧑🏻',label:'Avatar com pele clara'},{id:2,symbol:'🧑🏼',label:'Avatar com pele clara média'},
+ {id:3,symbol:'🧑🏽',label:'Avatar com pele média'},{id:4,symbol:'🧑🏾',label:'Avatar com pele morena'},
+ {id:5,symbol:'🧑🏿',label:'Avatar com pele escura'},{id:6,symbol:'👤',label:'Avatar neutro'}
+];
+const avatarOf=id=>avatars.find(a=>a.id===id)||avatars[0];
+// O atributo no elemento raiz permite que a folha de estilos aplique a paleta inteira sem duplicar telas.
+function applyTheme(){document.documentElement.dataset.theme=state.user?.temaEscuro?'dark':'light';document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.user?.temaEscuro?'#0b1822':'#12374e');}
 const brl = n => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 function parseApiDate(value) {
  if(value instanceof Date)return Number.isNaN(value.getTime())?null:value;
@@ -25,7 +33,7 @@ function el(tag,props={},...children) {
  for(const child of children.flat(Infinity))if(child!=null)node.append(child instanceof Node?child:document.createTextNode(String(child)));
  return node;
 }
-const button=(text,click,cls='')=>el('button',{type:'button',class:cls,onclick:click},text);
+const button=(text,click,cls='')=>el('button',{type:'button',class:cls,onclick:click,'aria-label':text},text);
 const icon=className=>el('i',{class:`fa-solid ${className}`,'aria-hidden':'true'});
 const brandLockup=(tagline='Sistema de Gestão')=>el('div',{class:'brand-lockup'},el('img',{class:'brand-logo',src:'assets/techpaper-logo-v3.png',alt:'Símbolo TechPaper'}),el('div',{},el('div',{class:'brand'},'TechPaper'),el('small',{},tagline)));
 async function api(path,options={}) {
@@ -38,18 +46,18 @@ async function api(path,options={}) {
  }catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw new Error('Sem confirmação do servidor. Verifique a conexão antes de tentar novamente.');throw e;}finally{clearTimeout(timer);}
 }
 function table(headers,rows) {return rows.length?el('div',{class:'table-wrap'},el('table',{},el('thead',{},el('tr',{},headers.map(h=>el('th',{scope:'col'},h)))),el('tbody',{},rows.map(row=>el('tr',{},row.map(c=>el('td',{},c))))))):el('div',{class:'empty'},'Nenhum registro encontrado.');}
-function field(label,name,value='',type='text',extra={}) {return el('label',{},label,el('input',{name,type,value,required:true,...extra}));}
-function select(label,name,values,current) {return el('label',{},label,el('select',{name,required:true},values.map(([v,t])=>el('option',{value:v,selected:String(v)===String(current)},t))));}
+function field(label,name,value='',type='text',extra={}) {return el('label',{},label,el('input',{name,type,value,required:true,'aria-label':label,...extra}));}
+function select(label,name,values,current) {return el('label',{},label,el('select',{name,required:true,'aria-label':label},values.map(([v,t])=>el('option',{value:v,selected:String(v)===String(current)},t))));}
 function showDialog(title,body){content.replaceChildren(el('h2',{},title),body);if(!modal.open)modal.showModal();}
 function form(fields,save,label='Salvar') {
- const submit=el('button',{type:'submit'},label);const f=el('form',{},fields,el('div',{class:'toolbar'},submit,button('Cancelar',()=>modal.close(),'secondary')));
+ const submit=el('button',{type:'submit','aria-label':label},label);const f=el('form',{},fields,el('div',{class:'toolbar'},submit,button('Cancelar',()=>modal.close(),'secondary')));
  f.addEventListener('submit',async e=>{e.preventDefault();if(submit.disabled)return;submit.disabled=true;try{await save(Object.fromEntries(new FormData(f)));modal.close();await refresh();notify('Operação concluída.');}catch(err){notify(err.message);}finally{submit.disabled=false;}});return f;
 }
-function renderLogin(){app.replaceChildren(el('main',{class:'login',id:'main'},el('section',{class:'login-intro'},brandLockup('Gestão inteligente para papelarias'),el('h1',{},'Tudo em ordem.\nDo estoque ao orçamento.'),el('p',{},'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')),el('section',{class:'login-form'},el('span',{class:'eyebrow'},'BEM-VINDO À EQUIPE'),el('h2',{},'Acesse sua conta'),el('p',{class:'muted'},'Entre com o acesso fornecido pelo administrador.'),(()=>{const f=el('form',{},field('E-mail','login','','email',{autocomplete:'username'}),field('Senha','password','','password',{autocomplete:'current-password'}),el('button',{type:'submit'},'Entrar'));f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;try{const r=await api('usuarios/login',{method:'POST',body:Object.fromEntries(new FormData(f))});state.user=r.usuario;await refresh();}catch(err){notify(err.message);}finally{b.disabled=false;}};return f;})())));}
+function renderLogin(){applyTheme();app.replaceChildren(el('main',{class:'login',id:'main'},el('section',{class:'login-intro'},brandLockup('Gestão inteligente para papelarias'),el('h1',{},'Tudo em ordem.\nDo estoque ao orçamento.'),el('p',{},'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')),el('section',{class:'login-form'},el('span',{class:'eyebrow'},'BEM-VINDO À EQUIPE'),el('h2',{},'Acesse sua conta'),el('p',{class:'muted'},'Entre com o acesso fornecido pelo administrador.'),(()=>{const f=el('form',{},field('E-mail','login','','email',{autocomplete:'username'}),field('Senha','password','','password',{autocomplete:'current-password'}),el('button',{type:'submit','aria-label':'Entrar'},'Entrar'));f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;try{const r=await api('usuarios/login',{method:'POST',body:Object.fromEntries(new FormData(f))});state.user=r.usuario;applyTheme();await refresh();}catch(err){notify(err.message);}finally{b.disabled=false;}};return f;})())));}
 let refreshing=false;
 async function refresh(){if(refreshing)return;refreshing=true;try{
  const names=['produtos','fornecedores','movimentacoes','orcamentos',...(state.user?.role==='Admin'?['usuarios']:[])];
- const values=await Promise.all(names.map(n=>api(n)));names.forEach((n,i)=>state[n]=values[i]);state.lastSync=new Date();render();
+ const [user,...values]=await Promise.all([api('usuarios/me'),...names.map(n=>api(n))]);state.user=user;names.forEach((n,i)=>state[n]=values[i]);state.lastSync=new Date();render();
  }finally{refreshing=false;}}
 function dashboardCharts(){
  const palette=['#1e6b91','#2aa889','#e9a23b','#775da6','#d45b4c','#5f7890'];
@@ -64,11 +72,13 @@ function dashboardCharts(){
  return el('div',{class:'charts-grid'},el('section',{class:'card chart-card'},el('div',{class:'chart-title'},el('span',{class:'chart-symbol','aria-hidden':'true'},icon('fa-chart-pie')),el('div',{},el('h2',{},'Estoque por categoria'),el('p',{class:'muted'},'Quantidade disponível em cada grupo'))),el('div',{class:'donut-layout'},donut,legend)),el('section',{class:'card chart-card'},el('div',{class:'chart-title'},el('span',{class:'chart-symbol success','aria-hidden':'true'},icon('fa-chart-column')),el('div',{},el('h2',{},'Volume de movimentações'),el('p',{class:'muted'},'Comparação do histórico de entradas e saídas'))),bars));
 }
 function render(){if(!state.user)return renderLogin();
+ applyTheme();
  const pages=['Visão geral','Produtos','Fornecedores','Estoque','Movimentações','Orçamentos','Relatórios',...(state.user.role==='Admin'?['Usuários']:[]),'Suporte e inclusão'];
  const pageIcons={'Visão geral':'fa-chart-line','Produtos':'fa-tags','Fornecedores':'fa-truck-field','Estoque':'fa-boxes-stacked','Movimentações':'fa-right-left','Orçamentos':'fa-file-invoice-dollar','Relatórios':'fa-chart-column','Usuários':'fa-users-gear','Suporte e inclusão':'fa-hands-asl-interpreting'};
- const nav=el('nav',{'aria-label':'Navegação principal'},pages.map(p=>el('button',{type:'button',class:p===state.page?'active':'',onclick:()=>{state.page=p;render();mainFocus();}},el('span',{class:'nav-icon','aria-hidden':'true'},icon(pageIcons[p])),el('span',{},p))));
- const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},el('div',{class:'user-summary'},el('span',{class:'user-avatar','aria-hidden':'true'},state.user.name.charAt(0).toUpperCase()),el('div',{},el('strong',{},state.user.name),el('div',{class:'muted'},state.user.role))),el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;renderLogin();}catch(e){notify(e.message);}},'secondary')))));
- app.replaceChildren(el('div',{class:'layout'},el('aside',{class:'sidebar'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.1.0'))),main));
+ const nav=el('nav',{'aria-label':'Navegação principal'},pages.map(p=>el('button',{type:'button','aria-label':`Abrir ${p}`,class:p===state.page?'active':'',onclick:()=>{state.page=p;render();mainFocus();}},el('span',{class:'nav-icon','aria-hidden':'true'},icon(pageIcons[p])),el('span',{},p))));
+ const profileButton=el('button',{type:'button',class:'user-summary profile-button','aria-label':'Abrir preferências de tema e avatar',onclick:preferencesDialog},el('span',{class:'user-avatar','aria-hidden':'true'},avatarOf(state.user.avatarId).symbol),el('span',{class:'profile-copy'},el('strong',{},state.user.name),el('span',{class:'muted'},state.user.role)));
+ const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
+ app.replaceChildren(el('div',{class:'layout'},el('aside',{class:'sidebar'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.3.0'))),main));
  function mainFocus(){setTimeout(()=>main.focus(),0);}
  const manager=['Admin','Supervisor'].includes(state.user.role);
  if(state.page==='Visão geral'){
@@ -93,6 +103,17 @@ function render(){if(!state.user)return renderLogin();
   main.append(el('div',{class:'toolbar'},button('Novo usuário',()=>userForm())),table(['Nome','E-mail','Perfil','Ações'],state.usuarios.map(u=>[u.name,u.login,u.role,el('div',{class:'toolbar'},button('Editar',()=>userForm(u),'secondary'),u.id!==state.user.id?button('Desativar',()=>remove('usuarios',u.id),'danger'):null)])));
  }else if(state.page==='Relatórios'){reports(main);
  }else{main.append(el('div',{class:'support-hero'},el('span',{class:'support-icon'},icon('fa-hands-asl-interpreting')),el('div',{},el('span',{class:'eyebrow'},'ACESSIBILIDADE'),el('h2',{},'TechPaper para toda a equipe'),el('p',{},'Use o botão azul do VLibras no canto direito da tela para traduzir o conteúdo para Libras.'))),el('div',{class:'support-grid'},el('section',{class:'card'},el('h2',{},'Tecnologia acessível e respeito à diversidade'),el('p',{},'A equipe deve oferecer atendimento respeitoso, sem discriminação racial, religiosa, de gênero ou de origem. Perfis de acesso são definidos pela responsabilidade profissional.'),el('p',{},'O portal oferece navegação por teclado, foco visível, textos compatíveis com leitores de tela e tradução pelo VLibras. Você também pode ampliar a página pelo navegador.'),el('p',{},'Não coletamos raça, religião ou outras informações sensíveis para as operações de estoque e orçamento.')),el('section',{class:'card'},el('h2',{},'Como trabalhar com segurança'),el('p',{},'Cadastre produtos com estoque zero e registre entradas e saídas em Movimentações. Se faltar confirmação, use a opção de tentar novamente: o sistema mantém a identificação da operação.'),el('p',{},'Aprovações de orçamento são realizadas por administradores ou supervisores. O aplicativo usa os mesmos dados; atualize a tela para conferir mudanças feitas por outro colega.'))));}
+}
+// A API devolve o usuário atualizado; assim, a interface nunca presume que a gravação foi aceita.
+function preferencesDialog(){
+ const selected=state.user.avatarId||1;
+ const gallery=el('div',{class:'avatar-gallery',role:'radiogroup','aria-label':'Galeria de avatares'},avatars.map(a=>el('button',{type:'button',role:'radio',class:'avatar-option'+(a.id===selected?' selected':''),'aria-label':a.label,'aria-checked':a.id===selected,onclick:()=>savePreferences(state.user.temaEscuro,a.id)},el('span',{'aria-hidden':'true'},a.symbol),el('small',{},`Opção ${a.id}`))));
+ const themeLabel=state.user.temaEscuro?'Usar tema claro':'Usar tema escuro';
+ showDialog('Aparência e inclusão',el('div',{},el('p',{class:'muted'},'Escolha uma representação visual. O TechPaper salva apenas o número do avatar e não registra raça ou etnia.'),gallery,button(themeLabel,()=>savePreferences(!state.user.temaEscuro,state.user.avatarId),'theme-toggle'),button('Fechar',()=>modal.close(),'secondary')));
+}
+async function savePreferences(temaEscuro,avatarId){
+ try{const user=await api('usuarios/me/preferencias',{method:'PATCH',body:{temaEscuro,avatarId}});state.user=user;modal.close();applyTheme();render();notify('Preferências atualizadas.');}
+ catch(e){notify(e.message);}
 }
 async function remove(path,id){if(!confirm('Confirma esta operação? Registros vinculados a histórico serão preservados.'))return;try{await api(`${path}/${id}`,{method:'DELETE'});await refresh();}catch(e){notify(e.message);}}
 function productForm(p={}){showDialog(p.id?'Editar produto':'Novo produto',form([

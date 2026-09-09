@@ -4,8 +4,8 @@ O sistema, o aplicativo, o banco e o texto das três matérias já foram prepara
 
 ## 1. Instalar o aplicativo no Android
 
-1. Abra no celular este endereço: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/0def36cb-00cd-4cf4-9a72-2679123dca63`.
-2. Na área **Build artifact — APK**, toque em **Install**. A página informa que a versão 1.2.0 foi concluída com sucesso.
+1. Abra no celular este endereço: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6`.
+2. Na área **Build artifact — APK**, toque em **Install**. A página informa que a versão 1.3.0 foi concluída com sucesso.
 3. Se o Android mostrar “Por segurança, seu smartphone não tem permissão para instalar apps desconhecidos”, toque em **Configurações**.
 4. Ative **Permitir desta fonte** para o navegador usado no download.
 5. Volte uma tela e toque em **Instalar**.
@@ -25,7 +25,9 @@ Faça uma captura em cada situação abaixo, nesta ordem:
 6. histórico mostrando essa movimentação com data e hora;
 7. tela Orçamentos com dois itens;
 8. detalhe do orçamento salvo;
-9. tela Conta, mostrando nome e perfil.
+9. tela Conta, mostrando nome e perfil;
+10. tela Conta mostrando a galeria de avatares;
+11. visão geral com o tema escuro ativado.
 
 Não deixe senha, token ou endereço completo do banco aparecer em nenhuma imagem.
 
@@ -43,7 +45,7 @@ O banco em produção já existe e já é usado pelo sistema. Esta etapa serve p
 8. Clique em **Run**.
 9. Tire uma captura do resultado que lista as oito tabelas.
 10. Role o resultado e tire uma captura das funções `sp_registrar_movimentacao` e `sp_resumo_estoque`.
-11. Tire outra captura dos gatilhos de auditoria e proteção do histórico.
+11. Tire outra captura da `TRG_ATUALIZA_ESTOQUE`, do gatilho de auditoria e dos gatilhos de proteção do histórico.
 12. Guarde essas imagens em uma pasta chamada `Evidencias PIM IV`.
 
 O arquivo `database/000_banco_completo.sql` é o script completo exigido pelo manual. Ele deve ser entregue junto com o projeto. Você não precisa executá-lo novamente no banco que já funciona.
