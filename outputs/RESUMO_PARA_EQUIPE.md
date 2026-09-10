@@ -15,7 +15,8 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Endereço publicado: `https://techpaper-pim-iv.onrender.com`.
 - Funções: login, visão geral, gráficos, produtos, fornecedores, estoque, orçamentos, usuários e relatórios.
 - Acessibilidade: navegação por teclado, textos alternativos e recurso VLibras.
-- Inclusão visual: tema claro/escuro e seis avatares sincronizados pela conta.
+- Inclusão: escolha obrigatória entre seis avatares representativos, tema claro/escuro e banners educativos rotativos.
+- Celular: menu lateral recolhível e gráficos empilhados sem rolagem horizontal.
 
 ### API
 
@@ -28,13 +29,13 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 
 - Tecnologia: JavaScript, React Native e Expo.
 - Local do código: pasta `mobile`.
-- Telas: Login, Resumo, Produtos, Estoque, Orçamentos e Conta.
+- Telas: Login, escolha inicial de avatar, Resumo com gráficos, Produtos, Estoque, Orçamentos e Conta.
 - Segurança: o token da sessão fica no Expo SecureStore e a senha é apagada depois do login.
 - Sincronização: ocorre no login, ao tocar em Atualizar, ao puxar a tela e ao retornar ao aplicativo.
 - Proteção de estoque: cada movimentação recebe uma identificação única para impedir lançamentos duplicados quando a conexão falha.
 - Preferências: tema e avatar escolhidos na tela Conta permanecem associados ao usuário.
-- Versão atual do código: 1.3.0.
-- Página do APK: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6`.
+- Versão atual do código: 1.4.0.
+- O endereço da compilação 1.4.0 será incluído após a autorização do envio do código ao EAS Build. O APK 1.3.0 anterior continua disponível durante essa etapa.
 
 ### Banco de dados
 
@@ -90,7 +91,8 @@ O portal e o aplicativo agora reconhecem datas ISO, valores com fuso horário e 
 - Compilação da API: concluída com 0 erros e 0 avisos.
 - Testes do módulo JavaScript mobile: 6 aprovados.
 - Testes de integração da versão atual: 10 aprovados, incluindo preferências, concorrência e trigger de estoque.
-- APK: compilado com sucesso pelo EAS Build.
+- Exportação Android 1.4.0: concluída localmente com 713 módulos.
+- APK 1.4.0: pendente somente da compilação externa no EAS Build.
 - Documento acadêmico: 21 páginas revisadas visualmente.
 - A trigger também foi verificada por uma inserção SQL direta, com alteração exata do saldo e rollback do teste.
 
@@ -116,6 +118,7 @@ O documento possui capa, folha de rosto, resumo, abstract, sumário, introduçã
 ## Arquivos principais
 
 - `README.md`: apresentação técnica do repositório;
+- `docs/ATUALIZACAO_RESPONSIVIDADE_GRAFICOS_INCLUSAO.md`: texto acadêmico e evidências desta atualização;
 - `outputs/LEIA_PRIMEIRO_FINAL.md`: tutorial completo para terminar a entrega;
 - `outputs/CAPITULOS_PIM_IV_MOBILE_JAVASCRIPT_BANCO_ABNT.docx`: texto editável em ABNT;
 - `outputs/CAPITULOS_PIM_IV_MOBILE_JAVASCRIPT_BANCO_ABNT.pdf`: versão para leitura;

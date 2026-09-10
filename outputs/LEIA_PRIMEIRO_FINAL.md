@@ -4,8 +4,8 @@ O sistema, o aplicativo, o banco e o texto das três matérias já foram prepara
 
 ## 1. Instalar o aplicativo no Android
 
-1. Abra no celular este endereço: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6`.
-2. Na área **Build artifact — APK**, toque em **Install**. A página informa que a versão 1.3.0 foi concluída com sucesso.
+1. Use o endereço da compilação **1.4.0** indicado no resumo da entrega depois que a geração externa for concluída. Enquanto isso, o endereço `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6` instala a versão anterior 1.3.0.
+2. Na área **Build artifact — APK**, toque em **Install** e confira se a página informa a versão 1.4.0.
 3. Se o Android mostrar “Por segurança, seu smartphone não tem permissão para instalar apps desconhecidos”, toque em **Configurações**.
 4. Ative **Permitir desta fonte** para o navegador usado no download.
 5. Volte uma tela e toque em **Instalar**.
@@ -18,16 +18,17 @@ O sistema, o aplicativo, o banco e o texto das três matérias já foram prepara
 Faça uma captura em cada situação abaixo, nesta ordem:
 
 1. tela de Login, antes de digitar a senha;
-2. tela Resumo depois da sincronização;
-3. tela Produtos com uma pesquisa preenchida;
-4. tela Estoque antes do envio;
-5. confirmação de uma entrada de 1 unidade com o motivo `Demonstração PIM IV`;
-6. histórico mostrando essa movimentação com data e hora;
-7. tela Orçamentos com dois itens;
-8. detalhe do orçamento salvo;
-9. tela Conta, mostrando nome e perfil;
-10. tela Conta mostrando a galeria de avatares;
-11. visão geral com o tema escuro ativado.
+2. escolha obrigatória de um avatar representativo no primeiro acesso;
+3. tela Resumo depois da sincronização, mostrando os gráficos de rosca e barras;
+4. tela Produtos com uma pesquisa preenchida;
+5. tela Estoque antes do envio;
+6. confirmação de uma entrada de 1 unidade com o motivo `Demonstração PIM IV`;
+7. histórico mostrando essa movimentação com data e hora;
+8. tela Orçamentos com dois itens;
+9. detalhe do orçamento salvo;
+10. tela Conta, mostrando nome, perfil e galeria de avatares;
+11. visão geral com o tema escuro ativado;
+12. banner educativo sobre respeito e diversidade.
 
 Não deixe senha, token ou endereço completo do banco aparecer em nenhuma imagem.
 
