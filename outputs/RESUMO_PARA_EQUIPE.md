@@ -35,7 +35,8 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Proteção de estoque: cada movimentação recebe uma identificação única para impedir lançamentos duplicados quando a conexão falha.
 - Preferências: tema e avatar escolhidos na tela Conta permanecem associados ao usuário.
 - Versão atual do código: 1.4.0.
-- O endereço da compilação 1.4.0 será incluído após a autorização do envio do código ao EAS Build. O APK 1.3.0 anterior continua disponível durante essa etapa.
+- Compilação 1.4.0 no EAS Build: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/dac7dffb-36e2-45b9-afc2-819b25c54150`.
+- Enquanto a fila gratuita estiver processando essa compilação, o APK 1.3.0 anterior continua disponível.
 
 ### Banco de dados
 
@@ -92,7 +93,7 @@ O portal e o aplicativo agora reconhecem datas ISO, valores com fuso horário e 
 - Testes do módulo JavaScript mobile: 6 aprovados.
 - Testes de integração da versão atual: 10 aprovados, incluindo preferências, concorrência e trigger de estoque.
 - Exportação Android 1.4.0: concluída localmente com 713 módulos.
-- APK 1.4.0: pendente somente da compilação externa no EAS Build.
+- APK 1.4.0: enviado e aguardando processamento na fila gratuita do EAS Build.
 - Documento acadêmico: 21 páginas revisadas visualmente.
 - A trigger também foi verificada por uma inserção SQL direta, com alteração exata do saldo e rollback do teste.
 

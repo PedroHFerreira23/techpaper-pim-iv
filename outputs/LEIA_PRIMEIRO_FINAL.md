@@ -4,7 +4,7 @@ O sistema, o aplicativo, o banco e o texto das três matérias já foram prepara
 
 ## 1. Instalar o aplicativo no Android
 
-1. Use o endereço da compilação **1.4.0** indicado no resumo da entrega depois que a geração externa for concluída. Enquanto isso, o endereço `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6` instala a versão anterior 1.3.0.
+1. Abra o endereço da compilação **1.4.0**: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/dac7dffb-36e2-45b9-afc2-819b25c54150`. Se a página ainda mostrar **Queued**, aguarde o término da fila gratuita. Enquanto isso, o endereço `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/8c3cae0a-d459-44ab-bf2a-ed1d5ff3bbe6` instala a versão anterior 1.3.0.
 2. Na área **Build artifact — APK**, toque em **Install** e confira se a página informa a versão 1.4.0.
 3. Se o Android mostrar “Por segurança, seu smartphone não tem permissão para instalar apps desconhecidos”, toque em **Configurações**.
 4. Ative **Permitir desta fonte** para o navegador usado no download.
