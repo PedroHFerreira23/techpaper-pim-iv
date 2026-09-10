@@ -4,7 +4,7 @@
 
 - Portal web: https://techpaper-pim-iv.onrender.com/
 - Repositório GitHub: https://github.com/PedroHFerreira23/techpaper-pim-iv
-- Versão publicada no GitHub: commit `51b521f` da branch `main`.
+- Versão publicada no GitHub: último commit da branch `main`.
 
 ## Aplicativo Android
 
