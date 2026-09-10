@@ -4,6 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
+import Svg, { Circle } from 'react-native-svg';
 import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
 
 const money = value => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -20,9 +21,18 @@ const parseApiDate = value => {
 const formatDateTime = value => { const date = parseApiDate(value); return date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'Data não informada'; };
 const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Conta'];
 const avatars = [
-  { id: 1, symbol: '🧑🏻', label: 'Avatar com pele clara' }, { id: 2, symbol: '🧑🏼', label: 'Avatar com pele clara média' },
-  { id: 3, symbol: '🧑🏽', label: 'Avatar com pele média' }, { id: 4, symbol: '🧑🏾', label: 'Avatar com pele morena' },
-  { id: 5, symbol: '🧑🏿', label: 'Avatar com pele escura' }, { id: 6, symbol: '👤', label: 'Avatar neutro' },
+  { id: 1, symbol: '👩🏻‍🦱', label: 'Pessoa de pele clara e cabelo cacheado' },
+  { id: 2, symbol: '👨🏼‍🦰', label: 'Pessoa de pele clara média e cabelo ruivo' },
+  { id: 3, symbol: '🧑🏽‍🦱', label: 'Pessoa de pele média e cabelo cacheado' },
+  { id: 4, symbol: '👩🏾‍🦱', label: 'Pessoa de pele morena e cabelo crespo' },
+  { id: 5, symbol: '👨🏿‍🦲', label: 'Pessoa de pele escura e cabeça raspada' },
+  { id: 6, symbol: '🧕🏽', label: 'Pessoa de pele média usando lenço' },
+];
+const educationalMessages = [
+  'Respeito não tem cor: atitudes inclusivas tornam a equipe mais forte.',
+  'Discriminação racial deve ser reconhecida, interrompida e comunicada.',
+  'Valorizar diferentes histórias e culturas melhora o ambiente de trabalho.',
+  'Escute com respeito, evite estereótipos e pratique a igualdade de oportunidades.',
 ];
 const ThemeContext = createContext(null);
 function useTheme() { return useContext(ThemeContext); }
@@ -37,6 +47,38 @@ function Field({ label, ...props }) {
 }
 function Card({ children }) { const { s } = useTheme(); return <View style={s.card}>{children}</View>; }
 function Avatar({ id, size = 'normal' }) { const { s } = useTheme(); const avatar = avatars.find(item => item.id === id) || avatars[0]; return <View accessible accessibilityRole="image" accessibilityLabel={avatar.label} style={[s.avatar, size === 'small' && s.avatarSmall]}><NativeText style={size === 'small' ? s.avatarSymbolSmall : s.avatarSymbol}>{avatar.symbol}</NativeText></View>; }
+function EducationalBanner({ message }) { const { s } = useTheme(); return <View accessible accessibilityRole="summary" accessibilityLabel={`Mensagem de inclusão: ${message}`} style={s.educationalBanner}><Text style={s.bannerTitle}>Respeito e diversidade</Text><Text style={s.bannerText}>{message}</Text></View>; }
+/*
+ * Os gráficos recebem somente dados já sincronizados pela camada de API. Essa
+ * separação mantém o componente visual sem regras de persistência e facilita
+ * testes, manutenção e reutilização, conforme a responsabilidade única.
+ */
+function DashboardCharts({ produtos, movimentacoes }) {
+  const { s, colors } = useTheme();
+  const palette = ['#1E6B91', '#2AA889', '#E9A23B', '#775DA6', '#D45B4C', '#5F7890'];
+  const totals = produtos.reduce((result, product) => { const category = product.categoria || 'Sem categoria'; result[category] = (result[category] || 0) + Number(product.estoque || 0); return result; }, {});
+  const categories = Object.entries(totals); const total = categories.reduce((sum, [, value]) => sum + value, 0);
+  const size = 176; const stroke = 24; const radius = (size - stroke) / 2; const circumference = 2 * Math.PI * radius; let offset = 0;
+  const movementTotals = movimentacoes.reduce((result, movement) => { if (movement.tipo === 'Entrada') result.Entrada += Number(movement.quantidade); if (movement.tipo === 'Saida') result.Saida += Number(movement.quantidade); return result; }, { Entrada: 0, Saida: 0 });
+  const maximum = Math.max(1, movementTotals.Entrada, movementTotals.Saida);
+  const categoryLabel = categories.length ? categories.map(([name, value]) => `${name}: ${value} unidades`).join(', ') : 'Sem estoque cadastrado';
+  return <>
+    <Card><Text style={s.subtitle}>Estoque por categoria</Text><Text style={s.muted}>Quantidade disponível em cada grupo</Text>
+      <View accessible accessibilityRole="image" accessibilityLabel={`Gráfico de rosca. ${categoryLabel}`} style={s.donutLayout}>
+        <Svg width={size} height={size}>
+          <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={colors.border} strokeWidth={stroke} />
+          {categories.map(([name, value], index) => { const length = total ? value / total * circumference : 0; const circle = <Circle key={name} cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={palette[index % palette.length]} strokeWidth={stroke} strokeDasharray={`${length} ${circumference - length}`} strokeDashoffset={-offset} rotation="-90" origin={`${size / 2}, ${size / 2}`} />; offset += length; return circle; })}
+        </Svg>
+        <View style={s.legend}>{categories.map(([name, value], index) => <View key={name} style={s.legendRow}><View style={[s.legendDot, { backgroundColor: palette[index % palette.length] }]} /><Text style={s.legendText}>{name}</Text><Text style={s.legendValue}>{value}</Text></View>)}</View>
+      </View>
+    </Card>
+    <Card><Text style={s.subtitle}>Volume de movimentações</Text><Text style={s.muted}>Comparação do histórico de entradas e saídas</Text>
+      <View accessible accessibilityRole="image" accessibilityLabel={`Gráfico de barras. Entradas: ${movementTotals.Entrada} unidades. Saídas: ${movementTotals.Saida} unidades.`} style={s.barChart}>
+        {[['Entrada', movementTotals.Entrada, '#2AA889'], ['Saída', movementTotals.Saida, '#D45B4C']].map(([label, value, color]) => <View key={label} style={s.barRow}><View style={s.barLabel}><Text>{label}</Text><Text style={s.label}>{value} un.</Text></View><View style={s.barTrack}><View style={[s.barFill, { width: `${value / maximum * 100}%`, backgroundColor: color }]} /></View></View>)}
+      </View>
+    </Card>
+  </>;
+}
 export default function App() { return <SafeAreaProvider><TechPaper /></SafeAreaProvider>; }
 function TechPaper() {
   const [url, setUrl] = useState(process.env.EXPO_PUBLIC_API_URL || 'https://techpaper-pim-iv.onrender.com');
@@ -51,6 +93,7 @@ function TechPaper() {
   const [pending, setPending] = useState(null);
   const [cliente, setCliente] = useState(''); const [validade, setValidade] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
   const [cart, setCart] = useState([]); const [detail, setDetail] = useState(null);
+  const [bannerIndex, setBannerIndex] = useState(0);
   const darkMode = !!session?.user?.temaEscuro;
   const theme = useMemo(() => createTheme(darkMode), [darkMode]); const s = theme.s;
   const themed = child => <ThemeContext.Provider value={theme}>{child}</ThemeContext.Provider>;
@@ -79,6 +122,10 @@ function TechPaper() {
     const subscription = AppState.addEventListener('change', state => { if (state === 'active' && session && !lock.current) sync(session); });
     return () => subscription.remove();
   }, [session]);
+  useEffect(() => {
+    const timer = setInterval(() => setBannerIndex(index => (index + 1) % educationalMessages.length), 8000);
+    return () => clearInterval(timer);
+  }, []);
   async function restorePending(current) {
     const value = await SecureStore.getItemAsync(pendingKey(current)); setPending(value ? JSON.parse(value) : null);
   }
@@ -162,6 +209,15 @@ function TechPaper() {
       <Button title={busy ? 'Entrando…' : 'Entrar'} onPress={enter} disabled={busy || !login || !password || !url} />
     </Card><Text style={s.muted}>As credenciais de acesso são fornecidas pelo administrador da papelaria.</Text>
   </ScrollView></KeyboardAvoidingView></SafeAreaView>);
+  // O primeiro acesso permanece bloqueado até uma representação ser escolhida.
+  if (!session.user.avatarSelecionado) return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><ScrollView contentContainerStyle={s.onboardingContent}>
+    <View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View>
+    <Card><Text accessibilityRole="header" style={s.title}>Escolha como aparecer</Text><Text style={s.muted}>Para continuar, selecione um avatar que represente você. A escolha pode ser alterada depois na tela Conta.</Text>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Escolha obrigatória de avatar" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: false, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={s.avatarChoice}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View>
+      {busy ? <ActivityIndicator accessibilityLabel="Salvando avatar" color={theme.colors.primary} /> : null}
+      <Text style={s.muted}>O sistema armazena somente o número do avatar. Raça e etnia não são coletadas.</Text>
+    </Card><EducationalBanner message={educationalMessages[bannerIndex]} />
+  </ScrollView></SafeAreaView>);
   return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><View style={s.userHeader}><Avatar id={session.user.avatarId} size="small" /><Text style={s.muted}>{session.user.name}</Text></View></View>
     <View style={s.sync}><Text style={s.muted}>{lastSync ? `Atualizado ${lastSync.toLocaleTimeString('pt-BR')}` : 'Aguardando sincronização'}</Text><Pressable accessibilityLabel="Atualizar dados do sistema" accessibilityHint="Busca novamente produtos, movimentações, orçamentos e preferências" accessibilityRole="button" onPress={() => sync()} disabled={refreshing || busy} style={s.refresh}><Text style={s.link}>{refreshing ? 'Atualizando…' : 'Atualizar'}</Text></Pressable></View>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
@@ -172,7 +228,7 @@ function TechPaper() {
         <Text style={s.muted}>Orçamentos não reservam nem baixam estoque.</Text>
         {canApprove && detail.status === 'Rascunho' && ['Aprovado', 'Cancelado'].map(status => <Button key={status} title={status === 'Aprovado' ? 'Aprovar orçamento' : 'Cancelar orçamento'} secondary={status === 'Cancelado'} disabled={busy} onPress={() => run(async () => { const updated = await api(session)(`orcamentos/${detail.id}/status`, { method: 'PATCH', body: { status, versao: detail.versao } }); setDetail({ ...detail, ...updated, itens: detail.itens }); await sync(); })} />)}
         <Button title="Voltar à lista" secondary onPress={() => setDetail(null)} /></Card> : <>
-      {tab === 'Resumo' && <><Text style={s.muted}>Uma visão do que precisa de atenção.</Text><Card><Text style={s.metric}>{data.produtos.length}</Text><Text>Produtos cadastrados</Text></Card><Card><Text style={s.metric}>{data.produtos.filter(p => p.estoque < 20).length}</Text><Text>Produtos com estoque abaixo de 20</Text></Card><Card><Text style={s.metric}>{data.orcamentos.filter(o => o.status === 'Rascunho').length}</Text><Text>Orçamentos em rascunho</Text></Card>{pending && <Button title="Concluir movimentação pendente" onPress={() => setTab('Estoque')} />}</>}
+      {tab === 'Resumo' && <><Text style={s.muted}>Uma visão do que precisa de atenção.</Text><Card><Text style={s.metric}>{data.produtos.length}</Text><Text>Produtos cadastrados</Text></Card><Card><Text style={s.metric}>{data.produtos.filter(p => p.estoque < 20).length}</Text><Text>Produtos com estoque abaixo de 20</Text></Card><Card><Text style={s.metric}>{data.orcamentos.filter(o => o.status === 'Rascunho').length}</Text><Text>Orçamentos em rascunho</Text></Card><DashboardCharts produtos={data.produtos} movimentacoes={data.movimentacoes} />{pending && <Button title="Concluir movimentação pendente" onPress={() => setTab('Estoque')} />}</>}
       {tab === 'Produtos' && <><Field label="Buscar por nome ou SKU" value={search} onChangeText={setSearch} />{filtered.map(p => <Card key={p.id}><Text style={s.subtitle}>{p.nome}</Text><Text style={s.muted}>{p.sku} · {p.categoria}</Text><Text style={s.row}>{money(p.precoVenda)} · {p.estoque} unidades</Text><Text style={s.muted}>{p.fornecedor}</Text></Card>)}{!filtered.length && <Text>Nenhum produto encontrado.</Text>}</>}
       {tab === 'Estoque' && <>
         <Card><Text style={s.subtitle}>Registrar movimentação</Text>
@@ -187,7 +243,8 @@ function TechPaper() {
           <Text style={s.muted}>O servidor confirma os preços e o total ao salvar.</Text><Button title="Salvar orçamento" disabled={busy || !cart.length} onPress={saveQuote} />
         </Card><Text style={s.subtitle}>Orçamentos da equipe</Text>{data.orcamentos.map(o => <Card key={o.id}><Text style={s.label}>#{o.id} · {o.cliente}</Text><Text>{o.status} · {money(o.total)}</Text><Button title="Ver detalhes" secondary onPress={() => setDetail(o)} /></Card>)}
       </>}
-      {tab === 'Conta' && <><Card><View style={s.profile}><Avatar id={session.user.avatarId} /><View><Text style={s.subtitle}>{session.user.name}</Text><Text>{session.user.login}</Text><Text style={s.row}>Perfil: {session.user.role}</Text></View></View><Text style={s.label}>Escolha seu avatar</Text><View accessibilityRole="radiogroup" accessibilityLabel="Galeria de avatares" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: session.user.avatarId === item.id, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={[s.avatarChoice, session.user.avatarId === item.id && s.avatarChoiceSelected]}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View><Button title={darkMode ? 'Usar tema claro' : 'Usar tema escuro'} accessibilityLabel={darkMode ? 'Ativar tema claro' : 'Ativar tema escuro'} disabled={busy} onPress={() => updatePreferences({ temaEscuro: !darkMode, avatarId: session.user.avatarId })} /><Text style={s.muted}>Tema e avatar ficam associados à sua conta e são sincronizados pelo servidor.</Text><Button title="Sair da conta" secondary disabled={busy} onPress={logout} /></Card><Card><Text style={s.subtitle}>Uma ferramenta para toda a equipe</Text><Text style={s.row}>Atendimento respeitoso e igualdade de acesso fazem parte do TechPaper. O avatar é apenas uma escolha visual; o sistema não registra raça, religião ou outros dados sensíveis.</Text><Text>Use os recursos de tamanho de fonte e leitor de tela do seu aparelho. Relate barreiras de uso ao responsável da equipe.</Text></Card></>}
+      {tab === 'Conta' && <><Card><View style={s.profile}><Avatar id={session.user.avatarId} /><View><Text style={s.subtitle}>{session.user.name}</Text><Text>{session.user.login}</Text><Text style={s.row}>Perfil: {session.user.role}</Text></View></View><Text style={s.label}>Escolha seu avatar</Text><View accessibilityRole="radiogroup" accessibilityLabel="Galeria de avatares" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: session.user.avatarId === item.id, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={[s.avatarChoice, session.user.avatarId === item.id && s.avatarChoiceSelected]}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View><Button title={darkMode ? 'Usar tema claro' : 'Usar tema escuro'} accessibilityLabel={darkMode ? 'Ativar tema claro' : 'Ativar tema escuro'} disabled={busy} onPress={() => updatePreferences({ temaEscuro: !darkMode, avatarId: session.user.avatarId })} /><Text style={s.muted}>Tema e avatar ficam associados à sua conta e são sincronizados pelo servidor.</Text><Button title="Sair da conta" secondary disabled={busy} onPress={logout} /></Card><Card><Text style={s.subtitle}>Uma ferramenta para toda a equipe</Text><Text style={s.row}>Atendimento respeitoso e igualdade de acesso fazem parte do TechPaper. O avatar é uma representação escolhida pelo usuário; o sistema não registra raça, religião ou outros dados sensíveis.</Text><Text>Use os recursos de tamanho de fonte e leitor de tela do seu aparelho. Relate barreiras de uso ao responsável da equipe.</Text></Card></>}
+      <EducationalBanner message={educationalMessages[bannerIndex]} />
       </>}
     </ScrollView></KeyboardAvoidingView>
     <View accessibilityRole="tablist" style={s.tabs}>{tabs.map(t => <Pressable key={t} accessibilityLabel={`Abrir ${t}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} style={[s.tab, tab === t && s.activeTab]} onPress={() => { setTab(t); setDetail(null); }}><Text style={[s.tabText, tab === t && s.activeTabText]}>{t}</Text></Pressable>)}</View>
@@ -206,6 +263,7 @@ function createTheme(dark) {
     text: { color: colors.text },
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 20, gap: 16, paddingBottom: 36 },
+    onboardingContent: { flexGrow: 1, justifyContent: 'center', padding: 20, gap: 18 },
     header: { paddingHorizontal: 20, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
     brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     userHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -243,6 +301,20 @@ function createTheme(dark) {
     avatarChoice: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, backgroundColor: colors.input },
     avatarChoiceSelected: { borderColor: colors.primary, backgroundColor: colors.secondary },
     avatarChoiceSymbol: { fontSize: 30 },
+    donutLayout: { alignItems: 'center', gap: 18, paddingVertical: 8 },
+    legend: { width: '100%', gap: 8 },
+    legendRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+    legendDot: { width: 12, height: 12, borderRadius: 4 },
+    legendText: { flex: 1, fontSize: 14 },
+    legendValue: { fontWeight: '800' },
+    barChart: { gap: 20, paddingVertical: 8 },
+    barRow: { gap: 8 },
+    barLabel: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    barTrack: { height: 25, overflow: 'hidden', borderRadius: 8, backgroundColor: colors.secondary },
+    barFill: { height: '100%', minWidth: 3, borderRadius: 8 },
+    educationalBanner: { backgroundColor: dark ? '#243E4C' : '#E8F4F8', borderLeftWidth: 5, borderLeftColor: colors.primary, borderRadius: 12, padding: 18, gap: 6 },
+    bannerTitle: { fontSize: 16, fontWeight: '800', color: colors.primary },
+    bannerText: { fontSize: 15, lineHeight: 22 },
     tabs: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: colors.surface, padding: 6, borderTopWidth: 1, borderTopColor: colors.border },
     tab: { flexGrow: 1, minHeight: 50, padding: 9, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
     activeTab: { backgroundColor: colors.secondary },

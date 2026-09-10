@@ -3,6 +3,7 @@
 **/node_modules/
 **/.expo/
 **/.expo-test-export/
+**/.expo-test-export-v*/
 **/dist-test*/
 **/.tool-cache/
 **/.pnpm-home/

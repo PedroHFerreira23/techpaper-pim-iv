@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
  "Ativo" BOOLEAN NOT NULL DEFAULT TRUE,
  "TemaEscuro" BOOLEAN NOT NULL DEFAULT FALSE,
  "AvatarId" INTEGER NOT NULL DEFAULT 1,
+ "AvatarSelecionado" BOOLEAN NOT NULL DEFAULT FALSE,
  "DataCriacao" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
  CONSTRAINT ck_usuario_perfil CHECK ("Role" IN ('Admin','Supervisor','Operador')),
  CONSTRAINT ck_usuario_avatar CHECK ("AvatarId" BETWEEN 1 AND 6)
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 -- As instruções ALTER tornam o script idempotente também em bancos já implantados.
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS "TemaEscuro" BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS "AvatarId" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS "AvatarSelecionado" BOOLEAN NOT NULL DEFAULT FALSE;
 DO $$ BEGIN
  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_usuario_avatar' AND conrelid='usuarios'::regclass) THEN
   ALTER TABLE usuarios ADD CONSTRAINT ck_usuario_avatar CHECK ("AvatarId" BETWEEN 1 AND 6);

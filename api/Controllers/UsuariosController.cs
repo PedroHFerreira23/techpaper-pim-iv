@@ -33,7 +33,7 @@ public class UsuariosController(AppDbContext db,IPasswordHasher<Usuario> hasher)
  public async Task<IActionResult> PatchPreferencias(PreferenciasUsuarioRequest r) {
   var id=int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
   var u=await db.Usuarios.FindAsync(id);if(u is null||!u.Ativo)return NotFound();
-  u.TemaEscuro=r.TemaEscuro;u.AvatarId=r.AvatarId;
+  u.TemaEscuro=r.TemaEscuro;u.AvatarId=r.AvatarId;u.AvatarSelecionado=true;
   await db.SaveChangesAsync();return Ok(u);
  }
  [HttpPost("logout")] public async Task<IActionResult> Logout() {

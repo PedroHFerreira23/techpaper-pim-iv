@@ -6,6 +6,8 @@ public class Usuario {
  public string Role {get;set;}="Operador"; public bool Ativo {get;set;}=true;
  // Preferências visuais, sem registrar raça ou qualquer outro dado pessoal sensível.
  public bool TemaEscuro {get;set;}=false; public int AvatarId {get;set;}=1;
+ // Diferencia a escolha consciente do valor técnico usado durante a migração.
+ public bool AvatarSelecionado {get;set;}=false;
  public DateTime DataCriacao {get;set;}=DateTime.UtcNow;
 }
 public class Sessao { public string TokenHash {get;set;}=""; public int UsuarioId {get;set;} public DateTime ExpiraEm {get;set;} }

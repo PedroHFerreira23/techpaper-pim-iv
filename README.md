@@ -10,9 +10,9 @@ Continuação programável do TechPaper apresentado no PIM III. O pacote reúne 
 - Estoque com entradas, saídas, histórico imutável, auditoria e proteção contra saldo negativo.
 - Repetição segura de movimentações quando web ou mobile não recebem a confirmação da primeira tentativa.
 - Orçamentos com itens, preços e totais calculados no servidor, estados e controle de alterações simultâneas.
-- Portal web responsivo com identidade TechPaper, gráficos de estoque e movimentações, painel de indicadores, VLibras, relatórios CSV e impressão/PDF.
-- Aplicativo Expo/React Native em JavaScript com login, produtos, estoque, orçamentos, sincronização e sessão no armazenamento seguro do aparelho.
-- Tema claro/escuro e galeria inclusiva de avatares sincronizados pela conta no portal e no aplicativo.
+- Portal web responsivo com menu hambúrguer em telas pequenas, gráficos de estoque e movimentações, painel de indicadores, VLibras, relatórios CSV e impressão/PDF.
+- Aplicativo Expo/React Native em JavaScript com os mesmos gráficos do portal, login, produtos, estoque, orçamentos, sincronização e sessão no armazenamento seguro do aparelho.
+- Tema claro/escuro, escolha obrigatória de avatar representativo e banners educativos rotativos sincronizados entre portal e aplicativo.
 - Atualização por gesto no mobile, rótulos de acessibilidade, navegação por teclado e integração com VLibras.
 - Script completo do banco, cinco funções armazenadas, quatro triggers, índices e consultas de verificação.
 - Containerização e pipeline de validação.
@@ -70,7 +70,8 @@ O bootstrap cria o primeiro administrador apenas quando `usuarios` está vazia. 
 - Dependências verificadas pelo Expo: atualizadas para o SDK 57.
 - PostgreSQL descartável criado e conferido com oito tabelas, cinco funções, quatro triggers e índices.
 - Portal verificado no navegador: login, painel, gráficos, VLibras e movimentação com data e hora de Brasília.
-- Aplicativo exportado pelo Expo para Android com os novos ícone e tela de abertura.
+- Responsividade conferida em largura de 390 px: menu recolhível, conteúdo sem rolagem horizontal e gráficos empilhados.
+- Aplicativo exportado pelo Expo para Android com gráficos em SVG, atualização por gesto, ícone e tela de abertura.
 
 O pacote Android de instalação deve ser gerado pelo perfil `preview` do EAS, conforme `docs/FINALIZACAO_ANDROID_E_NUVEM.md`.
 

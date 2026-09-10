@@ -1,12 +1,24 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const app = $('#app'); const modal = $('#modal'); const content = $('#modal-content');
-const state = { user: null, page: 'Visão geral', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], lastSync: null };
+const state = { user: null, page: 'Visão geral', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], lastSync: null, menuOpen: false };
 const avatars=[
- {id:1,symbol:'🧑🏻',label:'Avatar com pele clara'},{id:2,symbol:'🧑🏼',label:'Avatar com pele clara média'},
- {id:3,symbol:'🧑🏽',label:'Avatar com pele média'},{id:4,symbol:'🧑🏾',label:'Avatar com pele morena'},
- {id:5,symbol:'🧑🏿',label:'Avatar com pele escura'},{id:6,symbol:'👤',label:'Avatar neutro'}
+ {id:1,symbol:'👩🏻‍🦱',label:'Pessoa de pele clara e cabelo cacheado'},
+ {id:2,symbol:'👨🏼‍🦰',label:'Pessoa de pele clara média e cabelo ruivo'},
+ {id:3,symbol:'🧑🏽‍🦱',label:'Pessoa de pele média e cabelo cacheado'},
+ {id:4,symbol:'👩🏾‍🦱',label:'Pessoa de pele morena e cabelo crespo'},
+ {id:5,symbol:'👨🏿‍🦲',label:'Pessoa de pele escura e cabeça raspada'},
+ {id:6,symbol:'🧕🏽',label:'Pessoa de pele média usando lenço'}
 ];
+const educationalMessages=[
+ 'Respeito não tem cor: atitudes inclusivas tornam a equipe mais forte.',
+ 'Discriminação racial deve ser reconhecida, interrompida e comunicada.',
+ 'Valorizar diferentes histórias e culturas melhora o ambiente de trabalho.',
+ 'Escute com respeito, evite estereótipos e pratique a igualdade de oportunidades.'
+];
+let bannerIndex=0;
+function educationalBanner(){return el('aside',{class:'educational-banner','data-education-banner':'',role:'note','aria-live':'polite'},el('strong',{},'Respeito e diversidade'),el('span',{},educationalMessages[bannerIndex]));}
+setInterval(()=>{bannerIndex=(bannerIndex+1)%educationalMessages.length;document.querySelectorAll('[data-education-banner] span').forEach(node=>node.textContent=educationalMessages[bannerIndex]);},8000);
 const avatarOf=id=>avatars.find(a=>a.id===id)||avatars[0];
 // O atributo no elemento raiz permite que a folha de estilos aplique a paleta inteira sem duplicar telas.
 function applyTheme(){document.documentElement.dataset.theme=state.user?.temaEscuro?'dark':'light';document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.user?.temaEscuro?'#0b1822':'#12374e');}
@@ -75,10 +87,15 @@ function render(){if(!state.user)return renderLogin();
  applyTheme();
  const pages=['Visão geral','Produtos','Fornecedores','Estoque','Movimentações','Orçamentos','Relatórios',...(state.user.role==='Admin'?['Usuários']:[]),'Suporte e inclusão'];
  const pageIcons={'Visão geral':'fa-chart-line','Produtos':'fa-tags','Fornecedores':'fa-truck-field','Estoque':'fa-boxes-stacked','Movimentações':'fa-right-left','Orçamentos':'fa-file-invoice-dollar','Relatórios':'fa-chart-column','Usuários':'fa-users-gear','Suporte e inclusão':'fa-hands-asl-interpreting'};
- const nav=el('nav',{'aria-label':'Navegação principal'},pages.map(p=>el('button',{type:'button','aria-label':`Abrir ${p}`,class:p===state.page?'active':'',onclick:()=>{state.page=p;render();mainFocus();}},el('span',{class:'nav-icon','aria-hidden':'true'},icon(pageIcons[p])),el('span',{},p))));
+ const closeMenu=()=>{state.menuOpen=false;document.querySelector('.sidebar')?.classList.remove('open');document.querySelector('.menu-backdrop')?.classList.remove('open');document.querySelector('.menu-button')?.setAttribute('aria-expanded','false');};
+ const nav=el('nav',{id:'main-menu','aria-label':'Navegação principal'},pages.map(p=>el('button',{type:'button','aria-label':`Abrir ${p}`,class:p===state.page?'active':'',onclick:()=>{state.page=p;closeMenu();render();mainFocus();}},el('span',{class:'nav-icon','aria-hidden':'true'},icon(pageIcons[p])),el('span',{},p))));
  const profileButton=el('button',{type:'button',class:'user-summary profile-button','aria-label':'Abrir preferências de tema e avatar',onclick:preferencesDialog},el('span',{class:'user-avatar','aria-hidden':'true'},avatarOf(state.user.avatarId).symbol),el('span',{class:'profile-copy'},el('strong',{},state.user.name),el('span',{class:'muted'},state.user.role)));
- const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
- app.replaceChildren(el('div',{class:'layout'},el('aside',{class:'sidebar'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.3.0'))),main));
+ const toggleMenu=()=>{state.menuOpen=!state.menuOpen;document.querySelector('.sidebar')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-backdrop')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-button')?.setAttribute('aria-expanded',String(state.menuOpen));};
+ const menuButton=el('button',{type:'button',class:'menu-button','aria-label':'Abrir menu principal','aria-controls':'main-menu','aria-expanded':'false',onclick:toggleMenu},icon('fa-bars'));
+ const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},menuButton,el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
+ const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.4.0')));
+ const backdrop=el('button',{type:'button',class:'menu-backdrop','aria-label':'Fechar menu principal',onclick:closeMenu});
+ app.replaceChildren(el('div',{class:'layout'},sidebar,backdrop,main));
  function mainFocus(){setTimeout(()=>main.focus(),0);}
  const manager=['Admin','Supervisor'].includes(state.user.role);
  if(state.page==='Visão geral'){
@@ -103,16 +120,19 @@ function render(){if(!state.user)return renderLogin();
   main.append(el('div',{class:'toolbar'},button('Novo usuário',()=>userForm())),table(['Nome','E-mail','Perfil','Ações'],state.usuarios.map(u=>[u.name,u.login,u.role,el('div',{class:'toolbar'},button('Editar',()=>userForm(u),'secondary'),u.id!==state.user.id?button('Desativar',()=>remove('usuarios',u.id),'danger'):null)])));
  }else if(state.page==='Relatórios'){reports(main);
  }else{main.append(el('div',{class:'support-hero'},el('span',{class:'support-icon'},icon('fa-hands-asl-interpreting')),el('div',{},el('span',{class:'eyebrow'},'ACESSIBILIDADE'),el('h2',{},'TechPaper para toda a equipe'),el('p',{},'Use o botão azul do VLibras no canto direito da tela para traduzir o conteúdo para Libras.'))),el('div',{class:'support-grid'},el('section',{class:'card'},el('h2',{},'Tecnologia acessível e respeito à diversidade'),el('p',{},'A equipe deve oferecer atendimento respeitoso, sem discriminação racial, religiosa, de gênero ou de origem. Perfis de acesso são definidos pela responsabilidade profissional.'),el('p',{},'O portal oferece navegação por teclado, foco visível, textos compatíveis com leitores de tela e tradução pelo VLibras. Você também pode ampliar a página pelo navegador.'),el('p',{},'Não coletamos raça, religião ou outras informações sensíveis para as operações de estoque e orçamento.')),el('section',{class:'card'},el('h2',{},'Como trabalhar com segurança'),el('p',{},'Cadastre produtos com estoque zero e registre entradas e saídas em Movimentações. Se faltar confirmação, use a opção de tentar novamente: o sistema mantém a identificação da operação.'),el('p',{},'Aprovações de orçamento são realizadas por administradores ou supervisores. O aplicativo usa os mesmos dados; atualize a tela para conferir mudanças feitas por outro colega.'))));}
-}
+ main.append(educationalBanner());
+ if(!state.user.avatarSelecionado)setTimeout(()=>preferencesDialog(true),0);
+ }
 // A API devolve o usuário atualizado; assim, a interface nunca presume que a gravação foi aceita.
-function preferencesDialog(){
- const selected=state.user.avatarId||1;
+function preferencesDialog(required=false){
+ const selected=state.user.avatarSelecionado?state.user.avatarId:0;
  const gallery=el('div',{class:'avatar-gallery',role:'radiogroup','aria-label':'Galeria de avatares'},avatars.map(a=>el('button',{type:'button',role:'radio',class:'avatar-option'+(a.id===selected?' selected':''),'aria-label':a.label,'aria-checked':a.id===selected,onclick:()=>savePreferences(state.user.temaEscuro,a.id)},el('span',{'aria-hidden':'true'},a.symbol),el('small',{},`Opção ${a.id}`))));
  const themeLabel=state.user.temaEscuro?'Usar tema claro':'Usar tema escuro';
- showDialog('Aparência e inclusão',el('div',{},el('p',{class:'muted'},'Escolha uma representação visual. O TechPaper salva apenas o número do avatar e não registra raça ou etnia.'),gallery,button(themeLabel,()=>savePreferences(!state.user.temaEscuro,state.user.avatarId),'theme-toggle'),button('Fechar',()=>modal.close(),'secondary')));
+ modal.oncancel=required?event=>event.preventDefault():null;
+ showDialog(required?'Escolha seu avatar para continuar':'Aparência e inclusão',el('div',{},el('p',{class:'muted'},required?'A seleção é obrigatória no primeiro acesso e poderá ser alterada depois.':'Escolha uma representação visual. O TechPaper salva apenas o número do avatar e não registra raça ou etnia.'),gallery,required?null:button(themeLabel,()=>savePreferences(!state.user.temaEscuro,state.user.avatarId),'theme-toggle'),required?null:button('Fechar',()=>modal.close(),'secondary')));
 }
 async function savePreferences(temaEscuro,avatarId){
- try{const user=await api('usuarios/me/preferencias',{method:'PATCH',body:{temaEscuro,avatarId}});state.user=user;modal.close();applyTheme();render();notify('Preferências atualizadas.');}
+ try{const user=await api('usuarios/me/preferencias',{method:'PATCH',body:{temaEscuro,avatarId}});state.user=user;modal.oncancel=null;modal.close();applyTheme();render();notify('Preferências atualizadas.');}
  catch(e){notify(e.message);}
 }
 async function remove(path,id){if(!confirm('Confirma esta operação? Registros vinculados a histórico serão preservados.'))return;try{await api(`${path}/${id}`,{method:'DELETE'});await refresh();}catch(e){notify(e.message);}}
