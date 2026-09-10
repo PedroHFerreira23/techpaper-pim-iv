@@ -73,7 +73,7 @@ O bootstrap cria o primeiro administrador apenas quando `usuarios` está vazia. 
 - Responsividade conferida em largura de 390 px: menu recolhível, conteúdo sem rolagem horizontal e gráficos empilhados.
 - Aplicativo exportado pelo Expo para Android com gráficos em SVG, atualização por gesto, ícone e tela de abertura.
 
-O pacote Android de instalação deve ser gerado pelo perfil `preview` do EAS, conforme `docs/FINALIZACAO_ANDROID_E_NUVEM.md`.
+O APK Android 1.4.0 foi gerado pelo perfil `preview` do EAS e está disponível na [página oficial da compilação](https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/dac7dffb-36e2-45b9-afc2-819b25c54150). Uma cópia conferida também fica em `outputs/TechPaper-1.4.0.apk` no pacote local da equipe.
 
 ## Uso acadêmico
 

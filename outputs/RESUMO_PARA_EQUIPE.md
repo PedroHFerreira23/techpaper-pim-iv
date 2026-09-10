@@ -36,7 +36,8 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Preferências: tema e avatar escolhidos na tela Conta permanecem associados ao usuário.
 - Versão atual do código: 1.4.0.
 - Compilação 1.4.0 no EAS Build: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/dac7dffb-36e2-45b9-afc2-819b25c54150`.
-- Enquanto a fila gratuita estiver processando essa compilação, o APK 1.3.0 anterior continua disponível.
+- Download direto do APK 1.4.0: `https://expo.dev/artifacts/eas/mN8ctkJ0WUhlGk_cFbQ4Jbjg2vg7W2Xfie_3VwB7ZeY.apk`.
+- Cópia local: `outputs/TechPaper-1.4.0.apk`.
 
 ### Banco de dados
 
@@ -69,7 +70,7 @@ Organiza o projeto React Native e permite executar o aplicativo durante o desenv
 
 ### EAS Build
 
-Serviço do Expo que compilou o código mobile e gerou o APK Android assinado. A compilação 1.3.0 foi gerada com os recursos de tema, avatar e acessibilidade.
+Serviço do Expo que compilou o código mobile e gerou o APK Android assinado. A compilação 1.4.0 contém os gráficos, o tema, a escolha obrigatória de avatar, os banners educativos e os recursos de acessibilidade.
 
 ### Expo SecureStore
 
@@ -93,7 +94,8 @@ O portal e o aplicativo agora reconhecem datas ISO, valores com fuso horário e 
 - Testes do módulo JavaScript mobile: 6 aprovados.
 - Testes de integração da versão atual: 10 aprovados, incluindo preferências, concorrência e trigger de estoque.
 - Exportação Android 1.4.0: concluída localmente com 713 módulos.
-- APK 1.4.0: enviado e aguardando processamento na fila gratuita do EAS Build.
+- APK 1.4.0: compilado com sucesso e baixado para a pasta `outputs`.
+- SHA-256 do APK: `BFAA1DB52269826F1CAE0D9A12A5DD18CA1673BDA27622BB4656FAAEB08B46F4`.
 - Documento acadêmico: 21 páginas revisadas visualmente.
 - A trigger também foi verificada por uma inserção SQL direta, com alteração exata do saldo e rollback do teste.
 

@@ -38,7 +38,7 @@ O primeiro acesso apresenta uma tela de escolha de avatar e só libera a navega�
 
 ## 6 TESTES E RESULTADOS
 
-A atualização foi verificada em quatro níveis. O script completo criou um banco PostgreSQL descartável do zero. Os testes de integração validaram autenticação, permissões, preferências visuais, repetição segura, concorrência e atualização automática do saldo. Os testes da comunicação móvel foram aprovados, e a exportação do pacote Android confirmou a resolução dos componentes SVG.
+A atualização foi verificada em quatro níveis. O script completo criou um banco PostgreSQL descartável do zero. Os testes de integração validaram autenticação, permissões, preferências visuais, repetição segura, concorrência e atualização automática do saldo. Os testes da comunicação móvel foram aprovados, e a exportação do pacote Android confirmou a resolução dos componentes SVG. A versão 1.4.0 também foi compilada e assinada pelo EAS Build no formato APK para instalação direta.
 
 No navegador, o portal foi testado com 390 pixels de largura. O menu lateral permaneceu fora da tela até o acionamento do botão, abriu sobre o conteúdo, fechou pela camada de fundo e não gerou erros no console. Os gráficos ocuparam uma coluna e a página não apresentou rolagem horizontal.
 
