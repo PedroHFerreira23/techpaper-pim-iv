@@ -4,14 +4,13 @@ O sistema, o aplicativo, o banco e o texto das três matérias já foram prepara
 
 ## 1. Instalar o aplicativo no Android
 
-1. Abra o endereço da compilação concluída **1.4.0**: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/dac7dffb-36e2-45b9-afc2-819b25c54150`. Se estiver usando o computador, você também pode copiar `outputs/TechPaper-1.4.0.apk` para o celular.
-2. Na área **Build artifact — APK**, toque em **Install** e confira se a página informa a versão 1.4.0.
+1. Abra o endereço da compilação **1.5.0**: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/cdabffd5-d22b-4b95-8278-da9303c9c9c4`.
+2. Quando a área **Build artifact — APK** mostrar **Finished**, toque em **Install** e confira se a página informa a versão 1.5.0.
 3. Se o Android mostrar “Por segurança, seu smartphone não tem permissão para instalar apps desconhecidos”, toque em **Configurações**.
 4. Ative **Permitir desta fonte** para o navegador usado no download.
 5. Volte uma tela e toque em **Instalar**.
 6. Quando terminar, toque em **Abrir**.
-7. O campo **Endereço do servidor** já deve mostrar `https://techpaper-pim-iv.onrender.com`.
-8. Digite o mesmo e-mail e a mesma senha usados no portal web e toque em **Entrar**.
+7. A tela não mostra nem solicita o endereço técnico do servidor. Digite o mesmo e-mail e a mesma senha usados no portal web e toque em **Entrar**.
 
 ## 2. Fazer as capturas do aplicativo
 

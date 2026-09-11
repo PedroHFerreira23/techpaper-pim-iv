@@ -34,10 +34,9 @@ O portal e o aplicativo usam a mesma API e o mesmo banco. Portanto, uma moviment
 - Sincronização: ocorre no login, ao tocar em Atualizar, ao puxar a tela e ao retornar ao aplicativo.
 - Proteção de estoque: cada movimentação recebe uma identificação única para impedir lançamentos duplicados quando a conexão falha.
 - Preferências: tema e avatar escolhidos na tela Conta permanecem associados ao usuário.
-- Versão atual do código: 1.4.0.
-- Compilação 1.4.0 no EAS Build: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/dac7dffb-36e2-45b9-afc2-819b25c54150`.
-- Download direto do APK 1.4.0: `https://expo.dev/artifacts/eas/mN8ctkJ0WUhlGk_cFbQ4Jbjg2vg7W2Xfie_3VwB7ZeY.apk`.
-- Cópia local: `outputs/TechPaper-1.4.0.apk`.
+- Versão atual do código: 1.5.0.
+- Compilação 1.5.0 no EAS Build: `https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/cdabffd5-d22b-4b95-8278-da9303c9c9c4`.
+- A tela de acesso solicita somente e-mail e senha; o endereço HTTPS da API fica interno na configuração.
 
 ### Banco de dados
 
@@ -70,7 +69,7 @@ Organiza o projeto React Native e permite executar o aplicativo durante o desenv
 
 ### EAS Build
 
-Serviço do Expo que compilou o código mobile e gerou o APK Android assinado. A compilação 1.4.0 contém os gráficos, o tema, a escolha obrigatória de avatar, os banners educativos e os recursos de acessibilidade.
+Serviço do Expo que compila o código mobile e gera o APK Android assinado. A compilação 1.5.0 contém a nova identidade oficial, login simplificado, gráficos, tema, escolha obrigatória de avatar, banners educativos e recursos de acessibilidade.
 
 ### Expo SecureStore
 
@@ -80,9 +79,9 @@ Armazena a sessão do usuário usando a área protegida do Android. A senha não
 
 Recurso presente no portal para tradução de conteúdo para Libras. Ele é carregado pelo serviço oficial do VLibras.
 
-## Novo logo
+## Identidade visual oficial
 
-O símbolo representa uma folha, a letra T de TechPaper, um gráfico e uma seta de crescimento. A folha clara e o T dourado mantêm a marca visível sobre o fundo azul do sistema. Os arquivos ficam em `api/wwwroot/assets` e `mobile/assets`.
+O logotipo oficial escolhido pela equipe combina uma folha de papel azul com blocos digitais e a assinatura “TechPaper — Papelaria no Digital”. A versão completa aparece no acesso e o símbolo compacto é usado no ícone e nos cabeçalhos. Os arquivos ficam em `api/wwwroot/assets` e `mobile/assets`.
 
 ## Correção da data
 
@@ -93,9 +92,9 @@ O portal e o aplicativo agora reconhecem datas ISO, valores com fuso horário e 
 - Compilação da API: concluída com 0 erros e 0 avisos.
 - Testes do módulo JavaScript mobile: 6 aprovados.
 - Testes de integração da versão atual: 10 aprovados, incluindo preferências, concorrência e trigger de estoque.
-- Exportação Android 1.4.0: concluída localmente com 713 módulos.
-- APK 1.4.0: compilado com sucesso e baixado para a pasta `outputs`.
-- SHA-256 do APK: `BFAA1DB52269826F1CAE0D9A12A5DD18CA1673BDA27622BB4656FAAEB08B46F4`.
+- Exportação Android 1.5.0: concluída localmente com 714 módulos.
+- APK 1.5.0: enviado ao EAS Build e aguardando o processamento externo.
+- Planilha corrigida: `outputs/TechPaper_PIM_IV_Historias_de_Usuario_CORRIGIDAS.xlsx`.
 - Documento acadêmico: 21 páginas revisadas visualmente.
 - A trigger também foi verificada por uma inserção SQL direta, com alteração exata do saldo e rollback do teste.
 

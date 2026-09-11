@@ -322,13 +322,10 @@ Na tela do TechPaper, preencha:
 
 | Campo | Valor |
 |---|---|
-| `Endereço do servidor` | URL HTTPS da Render, sem barra final e sem `/health` |
 | `Login` | `Bootstrap__Login` |
 | `Senha` | `Bootstrap__Password` |
 
-Exemplo correto: `https://techpaper-pim-iv.onrender.com`.
-
-Não use somente `techpaper-pim-iv.onrender.com`, não acrescente `/health` e não informe a conexão da Neon. Toque em `Entrar`, abra produtos e estoque e confira a movimentação feita no portal.
+O endereço HTTPS da API é incorporado à configuração do aplicativo e não aparece na tela. Ele nunca deve ser substituído pela conexão da Neon. Toque em `Entrar`, abra produtos e estoque e confira a movimentação feita no portal.
 
 ---
 
