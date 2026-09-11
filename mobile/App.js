@@ -7,6 +7,8 @@ import * as Crypto from 'expo-crypto';
 import Svg, { Circle } from 'react-native-svg';
 import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
 
+// O endereço pertence à configuração técnica do aplicativo e nunca é solicitado ao usuário.
+const API_URL = normalizeUrl(process.env.EXPO_PUBLIC_API_URL || 'https://techpaper-pim-iv.onrender.com', __DEV__);
 const money = value => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const parseApiDate = value => {
   if (value === null || value === undefined || value === '') return null;
@@ -81,7 +83,6 @@ function DashboardCharts({ produtos, movimentacoes }) {
 }
 export default function App() { return <SafeAreaProvider><TechPaper /></SafeAreaProvider>; }
 function TechPaper() {
-  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_API_URL || 'https://techpaper-pim-iv.onrender.com');
   const [login, setLogin] = useState(''); const [password, setPassword] = useState('');
   const [session, setSession] = useState(null); const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false); const lock = useRef(false); const syncing = useRef(false);
@@ -97,13 +98,12 @@ function TechPaper() {
   const darkMode = !!session?.user?.temaEscuro;
   const theme = useMemo(() => createTheme(darkMode), [darkMode]); const s = theme.s;
   const themed = child => <ThemeContext.Provider value={theme}>{child}</ThemeContext.Provider>;
-  const api = current => createApi(current.url, current.token);
-  const pendingKey = current => `tp_pending_${current.user.id}_${current.url.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const api = current => createApi(API_URL, current.token);
+  const pendingKey = current => `tp_pending_${current.user.id}`;
 
   useEffect(() => {
     (async () => {
       try {
-        const savedUrl = await SecureStore.getItemAsync('tp_url'); if (savedUrl) setUrl(savedUrl);
         const saved = await SecureStore.getItemAsync('tp_session');
         if (saved) {
           const current = JSON.parse(saved); const user = await api(current)('usuarios/me');
@@ -149,10 +149,9 @@ function TechPaper() {
   }
   async function enter() {
     await run(async () => {
-      const base = normalizeUrl(url, __DEV__);
-      const response = await createApi(base)('usuarios/login', { method: 'POST', body: { login: login.trim(), password } });
-      const current = { url: base, token: response.accessToken, user: response.usuario };
-      await SecureStore.setItemAsync('tp_session', JSON.stringify(current)); await SecureStore.setItemAsync('tp_url', base);
+      const response = await createApi(API_URL)('usuarios/login', { method: 'POST', body: { login: login.trim(), password } });
+      const current = { token: response.accessToken, user: response.usuario };
+      await SecureStore.setItemAsync('tp_session', JSON.stringify(current));
       setSession(current); setPassword(''); await restorePending(current); await sync(current);
     });
   }
@@ -201,24 +200,23 @@ function TechPaper() {
   </>;
   if (loading) return themed(<SafeAreaView style={s.screen}><ActivityIndicator size="large" accessibilityLabel="Abrindo TechPaper" /></SafeAreaView>);
   if (!session) return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-    <View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logo} accessibilityLabel="Símbolo TechPaper" /><View><Text style={s.brand}>TechPaper</Text><Text style={s.brandCaption}>GESTÃO INTELIGENTE</Text></View></View><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
+    <Image source={require('./assets/techpaper-logo-v4.png')} style={s.logoFull} resizeMode="contain" accessibilityLabel="TechPaper, papelaria no digital" /><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
-    <Card><Field label="Endereço do servidor" value={url} onChangeText={setUrl} autoCapitalize="none" keyboardType="url" placeholder="https://seu-servidor" />
-      <Field label="E-mail" value={login} onChangeText={setLogin} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
+    <Card><Field label="E-mail" value={login} onChangeText={setLogin} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
       <Field label="Senha" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="password" />
-      <Button title={busy ? 'Entrando…' : 'Entrar'} onPress={enter} disabled={busy || !login || !password || !url} />
+      <Button title={busy ? 'Entrando…' : 'Entrar'} onPress={enter} disabled={busy || !login || !password} />
     </Card><Text style={s.muted}>As credenciais de acesso são fornecidas pelo administrador da papelaria.</Text>
   </ScrollView></KeyboardAvoidingView></SafeAreaView>);
   // O primeiro acesso permanece bloqueado até uma representação ser escolhida.
   if (!session.user.avatarSelecionado) return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><ScrollView contentContainerStyle={s.onboardingContent}>
-    <View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View>
+    <View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v4.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View>
     <Card><Text accessibilityRole="header" style={s.title}>Escolha como aparecer</Text><Text style={s.muted}>Para continuar, selecione um avatar que represente você. A escolha pode ser alterada depois na tela Conta.</Text>
       <View accessibilityRole="radiogroup" accessibilityLabel="Escolha obrigatória de avatar" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: false, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={s.avatarChoice}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View>
       {busy ? <ActivityIndicator accessibilityLabel="Salvando avatar" color={theme.colors.primary} /> : null}
       <Text style={s.muted}>O sistema armazena somente o número do avatar. Raça e etnia não são coletadas.</Text>
     </Card><EducationalBanner message={educationalMessages[bannerIndex]} />
   </ScrollView></SafeAreaView>);
-  return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/icon-v3.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><View style={s.userHeader}><Avatar id={session.user.avatarId} size="small" /><Text style={s.muted}>{session.user.name}</Text></View></View>
+  return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v4.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><View style={s.userHeader}><Avatar id={session.user.avatarId} size="small" /><Text style={s.muted}>{session.user.name}</Text></View></View>
     <View style={s.sync}><Text style={s.muted}>{lastSync ? `Atualizado ${lastSync.toLocaleTimeString('pt-BR')}` : 'Aguardando sincronização'}</Text><Pressable accessibilityLabel="Atualizar dados do sistema" accessibilityHint="Busca novamente produtos, movimentações, orçamentos e preferências" accessibilityRole="button" onPress={() => sync()} disabled={refreshing || busy} style={s.refresh}><Text style={s.link}>{refreshing ? 'Atualizando…' : 'Atualizar'}</Text></Pressable></View>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl accessibilityLabel="Puxe para atualizar o estoque" refreshing={refreshing} onRefresh={() => sync()} colors={[theme.colors.primary]} tintColor={theme.colors.primary} />}>
@@ -267,10 +265,9 @@ function createTheme(dark) {
     header: { paddingHorizontal: 20, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
     brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     userHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    logo: { width: 72, height: 72 },
+    logoFull: { width: 230, height: 210, alignSelf: 'center', borderRadius: 18 },
     logoSmall: { width: 38, height: 38 },
     brand: { fontSize: 20, fontWeight: '900', color: colors.primary, letterSpacing: .5 },
-    brandCaption: { fontSize: 10, fontWeight: '700', color: colors.muted, letterSpacing: 1.4 },
     title: { fontSize: 30, fontWeight: '800', color: colors.text, marginTop: 12 },
     subtitle: { fontSize: 21, fontWeight: '700', color: colors.text, marginBottom: 8 },
     muted: { fontSize: 14, color: colors.muted, lineHeight: 21 },
