@@ -47,7 +47,7 @@ function el(tag,props={},...children) {
 }
 const button=(text,click,cls='')=>el('button',{type:'button',class:cls,onclick:click,'aria-label':text},text);
 const icon=className=>el('i',{class:`fa-solid ${className}`,'aria-hidden':'true'});
-const brandLockup=(tagline='Sistema de Gestão',full=false)=>full?el('img',{class:'brand-full-logo',src:'assets/techpaper-logo-v4.png',alt:'TechPaper, papelaria no digital'}):el('div',{class:'brand-lockup'},el('img',{class:'brand-logo',src:'assets/techpaper-symbol-v4.png',alt:'Símbolo TechPaper'}),el('div',{},el('div',{class:'brand'},'TechPaper'),el('small',{},tagline)));
+const brandLockup=(tagline='Sistema de Gestão',full=false)=>full?el('img',{class:'brand-full-logo',src:'assets/techpaper-logo-v5-dark.png',alt:'TechPaper, papelaria no digital'}):el('div',{class:'brand-lockup'},el('img',{class:'brand-logo',src:'assets/techpaper-symbol-v5.png',alt:'Símbolo TechPaper'}),el('div',{},el('div',{class:'brand'},'TechPaper'),el('small',{},tagline)));
 async function api(path,options={}) {
  const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
  try {
@@ -93,7 +93,7 @@ function render(){if(!state.user)return renderLogin();
  const toggleMenu=()=>{state.menuOpen=!state.menuOpen;document.querySelector('.sidebar')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-backdrop')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-button')?.setAttribute('aria-expanded',String(state.menuOpen));};
  const menuButton=el('button',{type:'button',class:'menu-button','aria-label':'Abrir menu principal','aria-controls':'main-menu','aria-expanded':'false',onclick:toggleMenu},icon('fa-bars'));
  const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},menuButton,el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
- const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.5.0')));
+ const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.5.1')));
  const backdrop=el('button',{type:'button',class:'menu-backdrop','aria-label':'Fechar menu principal',onclick:closeMenu});
  app.replaceChildren(el('div',{class:'layout'},sidebar,backdrop,main));
  function mainFocus(){setTimeout(()=>main.focus(),0);}

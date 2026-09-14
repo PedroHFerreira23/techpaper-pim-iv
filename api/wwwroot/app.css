@@ -9,7 +9,7 @@
 body{background:linear-gradient(135deg,#f6f8fb 0%,#eef3f7 100%)}
 .sidebar{position:sticky;top:0;height:100vh}
 .brand-logo{filter:drop-shadow(0 8px 12px #061b2840)}
-.brand-full-logo{display:block;width:min(390px,100%);height:auto;max-height:310px;object-fit:contain;background:#fff;border-radius:20px;box-shadow:0 18px 50px #061b2855;margin-bottom:42px}
+.brand-full-logo{display:block;width:min(390px,100%);height:auto;max-height:310px;object-fit:contain;background:transparent;border-radius:0;box-shadow:none;filter:drop-shadow(0 18px 24px #061b2855);margin-bottom:42px}
 .nav-icon i{font-size:17px;width:20px;text-align:center}
 .sidebar .version{display:block;margin-top:10px;color:#7fa0b5;font-size:11px;letter-spacing:.7px}
 .topbar{background:#ffffffaa;backdrop-filter:blur(12px);margin:-30px clamp(-58px,-4vw,-22px) 25px;padding:25px clamp(22px,4vw,58px) 20px;box-shadow:0 1px 0 #dce5ed}
