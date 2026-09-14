@@ -2,12 +2,12 @@
   "expo": {
     "name": "TechPaper",
     "slug": "techpaper-mobile",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/techpaper-symbol-v4.png",
+    "icon": "./assets/techpaper-symbol-v5.png",
     "splash": {
-      "image": "./assets/techpaper-logo-v4.png",
+      "image": "./assets/techpaper-logo-v5.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -16,9 +16,9 @@
     ],
     "android": {
       "package": "com.techpaper.mobile",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/techpaper-symbol-v4.png",
+        "foregroundImage": "./assets/techpaper-symbol-v5.png",
         "backgroundColor": "#ffffff"
       }
     },

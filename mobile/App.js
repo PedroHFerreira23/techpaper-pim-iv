@@ -200,7 +200,7 @@ function TechPaper() {
   </>;
   if (loading) return themed(<SafeAreaView style={s.screen}><ActivityIndicator size="large" accessibilityLabel="Abrindo TechPaper" /></SafeAreaView>);
   if (!session) return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-    <Image source={require('./assets/techpaper-logo-v4.png')} style={s.logoFull} resizeMode="contain" accessibilityLabel="TechPaper, papelaria no digital" /><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
+    <Image source={require('./assets/techpaper-logo-v5.png')} style={s.logoFull} resizeMode="contain" accessibilityLabel="TechPaper, papelaria no digital" /><Text accessibilityRole="header" style={s.title}>Sua papelaria,{ '\n' }sempre conectada.</Text><Text style={s.muted}>Acesso exclusivo para a equipe.</Text>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <Card><Field label="E-mail" value={login} onChangeText={setLogin} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
       <Field label="Senha" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="password" />
@@ -209,14 +209,14 @@ function TechPaper() {
   </ScrollView></KeyboardAvoidingView></SafeAreaView>);
   // O primeiro acesso permanece bloqueado até uma representação ser escolhida.
   if (!session.user.avatarSelecionado) return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><ScrollView contentContainerStyle={s.onboardingContent}>
-    <View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v4.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View>
+    <View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v5.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View>
     <Card><Text accessibilityRole="header" style={s.title}>Escolha como aparecer</Text><Text style={s.muted}>Para continuar, selecione um avatar que represente você. A escolha pode ser alterada depois na tela Conta.</Text>
       <View accessibilityRole="radiogroup" accessibilityLabel="Escolha obrigatória de avatar" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: false, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={s.avatarChoice}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View>
       {busy ? <ActivityIndicator accessibilityLabel="Salvando avatar" color={theme.colors.primary} /> : null}
       <Text style={s.muted}>O sistema armazena somente o número do avatar. Raça e etnia não são coletadas.</Text>
     </Card><EducationalBanner message={educationalMessages[bannerIndex]} />
   </ScrollView></SafeAreaView>);
-  return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v4.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><View style={s.userHeader}><Avatar id={session.user.avatarId} size="small" /><Text style={s.muted}>{session.user.name}</Text></View></View>
+  return themed(<SafeAreaView style={s.screen}><StatusBar style={darkMode ? 'light' : 'dark'} /><View style={s.header}><View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v5.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View><View style={s.userHeader}><Avatar id={session.user.avatarId} size="small" /><Text style={s.muted}>{session.user.name}</Text></View></View>
     <View style={s.sync}><Text style={s.muted}>{lastSync ? `Atualizado ${lastSync.toLocaleTimeString('pt-BR')}` : 'Aguardando sincronização'}</Text><Pressable accessibilityLabel="Atualizar dados do sistema" accessibilityHint="Busca novamente produtos, movimentações, orçamentos e preferências" accessibilityRole="button" onPress={() => sync()} disabled={refreshing || busy} style={s.refresh}><Text style={s.link}>{refreshing ? 'Atualizando…' : 'Atualizar'}</Text></Pressable></View>
     {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl accessibilityLabel="Puxe para atualizar o estoque" refreshing={refreshing} onRefresh={() => sync()} colors={[theme.colors.primary]} tintColor={theme.colors.primary} />}>
