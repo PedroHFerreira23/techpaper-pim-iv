@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, AppState, BackHandler, Image, KeyboardAvoidin
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import Svg, { Circle } from 'react-native-svg';
 import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
@@ -21,7 +22,7 @@ const parseApiDate = value => {
   const date = new Date(text); return Number.isNaN(date.getTime()) ? null : date;
 };
 const formatDateTime = value => { const date = parseApiDate(value); return date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'Data não informada'; };
-const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Conta'];
+const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Inclusão', 'Conta'];
 const avatars = [
   { id: 1, symbol: '👩🏻‍🦱', label: 'Pessoa de pele clara e cabelo cacheado' },
   { id: 2, symbol: '👨🏼‍🦰', label: 'Pessoa de pele clara média e cabelo ruivo' },
@@ -36,6 +37,13 @@ const educationalMessages = [
   'Valorizar diferentes histórias e culturas melhora o ambiente de trabalho.',
   'Escute com respeito, evite estereótipos e pratique a igualdade de oportunidades.',
 ];
+const reportCategories = {
+  Discriminacao: 'Discriminação ou assédio',
+  Acessibilidade: 'Barreira de acessibilidade',
+  Sugestao: 'Sugestão de inclusão',
+  Outro: 'Outro assunto',
+};
+const reportStatus = { Recebido: 'Recebido', EmAnalise: 'Em análise', Concluido: 'Concluído' };
 const ThemeContext = createContext(null);
 function useTheme() { return useContext(ThemeContext); }
 function Text({ style, ...props }) { const { s } = useTheme(); return <NativeText style={[s.text, style]} {...props} />; }
@@ -87,7 +95,7 @@ function TechPaper() {
   const [session, setSession] = useState(null); const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false); const lock = useRef(false); const syncing = useRef(false);
   const [tab, setTab] = useState('Resumo'); const [notice, setNotice] = useState('');
-  const [data, setData] = useState({ produtos: [], movimentacoes: [], orcamentos: [] });
+  const [data, setData] = useState({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] });
   const [lastSync, setLastSync] = useState(null); const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState(''); const [selected, setSelected] = useState(null);
   const [tipo, setTipo] = useState('Entrada'); const [quantidade, setQuantidade] = useState('1'); const [motivo, setMotivo] = useState('');
@@ -95,21 +103,28 @@ function TechPaper() {
   const [cliente, setCliente] = useState(''); const [validade, setValidade] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
   const [cart, setCart] = useState([]); const [detail, setDetail] = useState(null);
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [relatoCategoria, setRelatoCategoria] = useState('Discriminacao');
+  const [relatoDescricao, setRelatoDescricao] = useState('');
   const darkMode = !!session?.user?.temaEscuro;
   const theme = useMemo(() => createTheme(darkMode), [darkMode]); const s = theme.s;
   const themed = child => <ThemeContext.Provider value={theme}>{child}</ThemeContext.Provider>;
   const api = current => createApi(API_URL, current.token);
   const pendingKey = current => `tp_pending_${current.user.id}`;
+  const cacheKey = current => `tp_cache_${current.user.id}`;
 
   useEffect(() => {
     (async () => {
       try {
         const saved = await SecureStore.getItemAsync('tp_session');
         if (saved) {
-          const current = JSON.parse(saved); const user = await api(current)('usuarios/me');
-          current.user = user; setSession(current); await restorePending(current); await sync(current);
+          const current = JSON.parse(saved);
+          if (current.expiresAt && new Date(current.expiresAt) <= new Date()) throw Object.assign(new Error('Sua sessão expirou. Entre novamente.'), { status: 401 });
+          setSession(current); await restorePending(current);
+          const cached = await AsyncStorage.getItem(cacheKey(current));
+          if (cached) { const parsed = JSON.parse(cached); setData(parsed.data); setLastSync(new Date(parsed.savedAt)); setNotice('Exibindo os últimos dados salvos enquanto o servidor é consultado.'); }
+          await sync(current);
         }
-      } catch (e) { setNotice(e.message); } finally { setLoading(false); }
+      } catch (e) { if(e.status===401)await SecureStore.deleteItemAsync('tp_session');setNotice(e.message); } finally { setLoading(false); }
     })();
   }, []);
   useEffect(() => {
@@ -131,16 +146,17 @@ function TechPaper() {
   }
   async function fail(e) {
     setNotice(e.message);
-    if (e.status === 401) { await SecureStore.deleteItemAsync('tp_session'); setSession(null); setData({ produtos: [], movimentacoes: [], orcamentos: [] }); setLastSync(null); }
+    if (e.status === 401) { if(session)await AsyncStorage.removeItem(cacheKey(session));await SecureStore.deleteItemAsync('tp_session'); setSession(null); setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] }); setLastSync(null); }
   }
   async function sync(current = session) {
     if (!current || syncing.current) return;
     syncing.current = true; setRefreshing(true);
     try {
       const request = api(current);
-      const [produtos, movimentacoes, orcamentos, user] = await Promise.all([request('produtos'), request('movimentacoes'), request('orcamentos'), request('usuarios/me')]);
-      const updated = { ...current, user }; setSession(updated); await SecureStore.setItemAsync('tp_session', JSON.stringify(updated));
-      setData({ produtos, movimentacoes, orcamentos }); setLastSync(new Date()); setNotice('');
+      const [produtos, movimentacoes, orcamentos, relatos, user] = await Promise.all([request('produtos'), request('movimentacoes'), request('orcamentos'), request('relatos-inclusao'), request('usuarios/me')]);
+      const updated = { ...current, user, expiresAt: current.expiresAt || new Date(Date.now()+8*60*60*1000).toISOString() }; setSession(updated); await SecureStore.setItemAsync('tp_session', JSON.stringify(updated));
+      const nextData={ produtos, movimentacoes, orcamentos, relatos };const savedAt=new Date();
+      setData(nextData);setLastSync(savedAt);await AsyncStorage.setItem(cacheKey(updated),JSON.stringify({savedAt:savedAt.toISOString(),data:{produtos,movimentacoes,orcamentos,relatos:[]}}));setNotice('');
     } catch (e) { await fail(e); } finally { syncing.current = false; setRefreshing(false); }
   }
   async function run(action) {
@@ -150,15 +166,15 @@ function TechPaper() {
   async function enter() {
     await run(async () => {
       const response = await createApi(API_URL)('usuarios/login', { method: 'POST', body: { login: login.trim(), password } });
-      const current = { token: response.accessToken, user: response.usuario };
+      const current = { token: response.accessToken, user: response.usuario, expiresAt: response.expiraEm };
       await SecureStore.setItemAsync('tp_session', JSON.stringify(current));
       setSession(current); setPassword(''); await restorePending(current); await sync(current);
     });
   }
   async function logout() {
     await run(async () => {
-      await api(session)('usuarios/logout', { method: 'POST' });
-      await SecureStore.deleteItemAsync('tp_session'); setSession(null); setData({ produtos: [], movimentacoes: [], orcamentos: [] });
+      try { await api(session)('usuarios/logout', { method: 'POST' }); } catch(error) { if(error.status!==0)throw error; }
+      await AsyncStorage.removeItem(cacheKey(session));await SecureStore.deleteItemAsync('tp_session'); setSession(null); setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] });
       setLastSync(null); setPending(null); setCart([]); setDetail(null); setCliente(''); setSelected(null); setTab('Resumo');
     });
   }
@@ -188,6 +204,13 @@ function TechPaper() {
       if (!cliente.trim() || !cart.length || !/^\d{4}-\d{2}-\d{2}$/.test(validade)) throw new Error('Informe cliente, validade (AAAA-MM-DD) e pelo menos um item.');
       const created = await api(session)('orcamentos', { method: 'POST', body: { cliente: cliente.trim(), validade, itens: cart } });
       setCart([]); setCliente(''); setDetail(created); await sync();
+    });
+  }
+  async function sendReport() {
+    await run(async()=>{
+      if(relatoDescricao.trim().length<20)throw new Error('Descreva a situação com pelo menos 20 caracteres.');
+      await api(session)('relatos-inclusao',{method:'POST',body:{categoria:relatoCategoria,descricao:relatoDescricao.trim()}});
+      setRelatoDescricao('');await sync();Alert.alert('Relato recebido','Você pode acompanhar o andamento na tela Inclusão.');
     });
   }
   const filtered = data.produtos.filter(p => `${p.nome} ${p.sku}`.toLowerCase().includes(search.toLowerCase()));
@@ -241,6 +264,11 @@ function TechPaper() {
           <Text style={s.muted}>O servidor confirma os preços e o total ao salvar.</Text><Button title="Salvar orçamento" disabled={busy || !cart.length} onPress={saveQuote} />
         </Card><Text style={s.subtitle}>Orçamentos da equipe</Text>{data.orcamentos.map(o => <Card key={o.id}><Text style={s.label}>#{o.id} · {o.cliente}</Text><Text>{o.status} · {money(o.total)}</Text><Button title="Ver detalhes" secondary onPress={() => setDetail(o)} /></Card>)}
       </>}
+      {tab === 'Inclusão' && <>
+        <Card><Text style={s.subtitle}>Respeito e acesso para toda a equipe</Text><Text style={s.row}>Interrompa atitudes discriminatórias, acolha quem relata e comunique situações com respeito e objetividade.</Text><Text style={s.row}>Valorize diferentes histórias, culturas, identidades e formas de participação. O TechPaper não utiliza raça, religião ou outros dados sensíveis nas operações da papelaria.</Text><Text style={s.muted}>O aplicativo oferece rótulos para leitores de tela, contraste de tema e consulta dos últimos dados sincronizados quando a conexão oscila.</Text></Card>
+        <Card><Text style={s.subtitle}>Canal reservado</Text><Text style={s.muted}>O relato será visível para você e para administradores responsáveis. Evite inserir dados pessoais de terceiros que não sejam necessários.</Text><Text style={s.label}>Assunto</Text><View accessibilityRole="radiogroup" accessibilityLabel="Assunto do relato" style={s.actions}>{Object.entries(reportCategories).map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{checked:relatoCategoria===value}} onPress={()=>setRelatoCategoria(value)} style={[s.choice,relatoCategoria===value&&s.choiceSelected]}><Text style={s.choiceText}>{label}</Text></Pressable>)}</View><Field label="Descreva o ocorrido ou a barreira" value={relatoDescricao} onChangeText={setRelatoDescricao} multiline numberOfLines={6} maxLength={2000} textAlignVertical="top" /><Text style={s.muted}>{relatoDescricao.length}/2000 caracteres · mínimo de 20</Text><Button title={busy?'Enviando…':'Enviar relato reservado'} disabled={busy||relatoDescricao.trim().length<20} onPress={sendReport} /></Card>
+        <Text style={s.subtitle}>{session.user.role==='Admin'?'Relatos recebidos':'Meus relatos'}</Text>{data.relatos.map(item=><Card key={item.id}><Text style={s.label}>{reportCategories[item.categoria]||item.categoria}</Text>{item.usuarioNome?<Text style={s.muted}>Enviado por {item.usuarioNome}</Text>:null}<Text style={s.row}>{item.descricao}</Text><Text style={s.muted}>{formatDateTime(item.dataCriacao)} · {reportStatus[item.status]||item.status}</Text></Card>)}{!data.relatos.length?<Text>Nenhum relato registrado.</Text>:null}
+      </>}
       {tab === 'Conta' && <><Card><View style={s.profile}><Avatar id={session.user.avatarId} /><View><Text style={s.subtitle}>{session.user.name}</Text><Text>{session.user.login}</Text><Text style={s.row}>Perfil: {session.user.role}</Text></View></View><Text style={s.label}>Escolha seu avatar</Text><View accessibilityRole="radiogroup" accessibilityLabel="Galeria de avatares" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: session.user.avatarId === item.id, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={[s.avatarChoice, session.user.avatarId === item.id && s.avatarChoiceSelected]}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View><Button title={darkMode ? 'Usar tema claro' : 'Usar tema escuro'} accessibilityLabel={darkMode ? 'Ativar tema claro' : 'Ativar tema escuro'} disabled={busy} onPress={() => updatePreferences({ temaEscuro: !darkMode, avatarId: session.user.avatarId })} /><Text style={s.muted}>Tema e avatar ficam associados à sua conta e são sincronizados pelo servidor.</Text><Button title="Sair da conta" secondary disabled={busy} onPress={logout} /></Card><Card><Text style={s.subtitle}>Uma ferramenta para toda a equipe</Text><Text style={s.row}>Atendimento respeitoso e igualdade de acesso fazem parte do TechPaper. O avatar é uma representação escolhida pelo usuário; o sistema não registra raça, religião ou outros dados sensíveis.</Text><Text>Use os recursos de tamanho de fonte e leitor de tela do seu aparelho. Relate barreiras de uso ao responsável da equipe.</Text></Card></>}
       <EducationalBanner message={educationalMessages[bannerIndex]} />
       </>}
@@ -288,6 +316,9 @@ function createTheme(dark) {
     link: { color: colors.primary, fontWeight: '700' },
     product: { padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 9, marginBottom: 6, minHeight: 48 },
     selected: { borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.secondary },
+    choice: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 12, paddingVertical: 9, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 9, backgroundColor: colors.input },
+    choiceSelected: { borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.secondary },
+    choiceText: { color: colors.text, fontSize: 14, fontWeight: '600' },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     profile: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     avatar: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.secondary },
