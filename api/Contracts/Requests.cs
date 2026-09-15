@@ -4,6 +4,10 @@ public record LoginRequest([Required,StringLength(100)] string Login,[Required,S
 public record UsuarioRequest([Required,StringLength(100)] string Name,[Required,EmailAddress,StringLength(100)] string Login,
  [StringLength(128,MinimumLength=10)] string? Password,[Required,RegularExpression("^(Admin|Supervisor|Operador)$")] string Role);
 public record PreferenciasUsuarioRequest(bool TemaEscuro,[Range(1,6)] int AvatarId);
+public record RelatoInclusaoRequest(
+ [Required,RegularExpression("^(Discriminacao|Acessibilidade|Sugestao|Outro)$")] string Categoria,
+ [Required,StringLength(2000,MinimumLength=20)] string Descricao);
+public record StatusRelatoRequest([Required,RegularExpression("^(Recebido|EmAnalise|Concluido)$")] string Status);
 public record ProdutoRequest([Required,StringLength(50)] string Sku,[Required,StringLength(100)] string Nome,
  [Required,StringLength(50)] string Categoria,[StringLength(150)] string? Fornecedor,int? FornecedorId,
  [Range(typeof(decimal),"0","999999999.99",ParseLimitsInInvariantCulture=true)] decimal PrecoCusto,[Range(typeof(decimal),"0","999999999.99",ParseLimitsInInvariantCulture=true)] decimal PrecoVenda,int Estoque=0);
