@@ -128,4 +128,16 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(status,200,me);self.assertTrue(me['temaEscuro']);self.assertEqual(me['avatarId'],5)
         self.assertEqual(request('usuarios/me/preferencias','PATCH',{'temaEscuro':False,'avatarId':7},self.operator)[0],400)
 
+    def test_11_reserved_inclusion_report(self):
+        body={'categoria':'Acessibilidade','descricao':'Leitor de tela não anunciou corretamente este componente.'}
+        status,created=request('relatos-inclusao','POST',body,self.operator)
+        self.assertEqual(status,201,created);self.assertEqual(created['status'],'Recebido')
+        self.assertIsNone(created.get('usuarioNome'))
+        status,own=request('relatos-inclusao',token=self.operator)
+        self.assertEqual(status,200,own);self.assertTrue(any(x['id']==created['id'] for x in own))
+        self.assertEqual(request(f"relatos-inclusao/{created['id']}/status",'PATCH',{'status':'Concluido'},self.operator)[0],403)
+        status,updated=request(f"relatos-inclusao/{created['id']}/status",'PATCH',{'status':'EmAnalise'},self.admin)
+        self.assertEqual(status,200,updated);self.assertEqual(updated['status'],'EmAnalise')
+        self.assertEqual(updated['usuarioNome'],'Operador Teste')
+
 if __name__=='__main__': unittest.main(verbosity=2)
