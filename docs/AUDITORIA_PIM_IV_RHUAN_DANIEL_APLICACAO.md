@@ -1,5 +1,7 @@
 # AUDITORIA DE ADERÊNCIA AO PIM IV
 
+> Atualização técnica de 15/09/2026: as lacunas de programação indicadas nesta auditoria foram tratadas na versão 1.6.0. Foram acrescentados o canal reservado de inclusão, a tabela e os endpoints correspondentes, uma procedure PostgreSQL usada pela API, cache operacional mobile sem relatos reservados, pipeline em `.github/workflows/validar.yml` e roteiro de validação real em `docs/VALIDACAO_INCLUSAO_USABILIDADE.md`. As planilhas do Rhuan e o texto original do Daniel continuam exigindo revisão editorial pela equipe.
+
 ## 1 ESCOPO DA CONFERÊNCIA
 
 Foram confrontados o Manual do PIM IV, o relatório do PIM III, a aplicação TechPaper, as quatro planilhas de gerenciamento enviadas por Rhuan e o texto de responsabilidade social e diversidade enviado por Daniel.
