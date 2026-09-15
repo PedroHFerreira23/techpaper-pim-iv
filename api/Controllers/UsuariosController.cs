@@ -21,7 +21,7 @@ public class UsuariosController(AppDbContext db,IPasswordHasher<Usuario> hasher)
   if(result==PasswordVerificationResult.SuccessRehashNeeded)u.Password=hasher.HashPassword(u,r.Password);
   var token=Convert.ToHexString(RandomNumberGenerator.GetBytes(32));var expiry=DateTime.UtcNow.AddHours(8);
   db.Sessoes.Add(new Sessao {TokenHash=SessionAuthentication.Hash(token),UsuarioId=u.Id,ExpiraEm=expiry});
-  await db.Sessoes.Where(x=>x.ExpiraEm<DateTime.UtcNow).ExecuteDeleteAsync();await db.SaveChangesAsync();
+  await db.Database.ExecuteSqlRawAsync("CALL sp_limpar_sessoes_expiradas()");await db.SaveChangesAsync();
   bool mobile=Request.Headers["X-TechPaper-Client"]=="mobile";
   if(!mobile)Response.Cookies.Append("techpaper_session",token,new CookieOptions {HttpOnly=true,Secure=Request.IsHttps,SameSite=SameSiteMode.Strict,Expires=expiry,Path="/"});
   return Ok(new {usuario=u,accessToken=mobile?token:null,expiraEm=expiry});
