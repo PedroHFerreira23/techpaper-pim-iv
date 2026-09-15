@@ -1,6 +1,6 @@
 # Banco de dados do TechPaper
 
-O arquivo principal é `000_banco_completo.sql`. Ele cria no PostgreSQL/Neon as oito tabelas, chaves, restrições, índices, funções, gatilhos e dados fictícios de demonstração. Pode ser executado novamente sem recriar registros que já existem.
+O arquivo principal é `000_banco_completo.sql`. Ele cria no PostgreSQL/Neon as nove tabelas, chaves, restrições, índices, funções, procedure, gatilhos e dados fictícios de demonstração. Pode ser executado novamente sem recriar registros que já existem.
 
 ## Ordem para a entrega
 
@@ -19,10 +19,12 @@ A API executa `001_schema.sql` e `002_routines.sql` ao iniciar. O arquivo consol
 - `produtos`: catálogo, preços e saldo;
 - `movimentacoes`: histórico imutável de entradas e saídas;
 - `sessoes`: tokens de sessão armazenados por hash;
+- `relatos_inclusao`: canal reservado, categoria, andamento e vínculo com o autor;
 - `orcamentos` e `itens_orcamento`: cabeçalho e composição dos orçamentos;
 - `auditoria_estoque`: saldo anterior e saldo posterior;
 - `sp_registrar_movimentacao`: transação com bloqueio de linha, validações e idempotência;
 - `sp_resumo_estoque`: consulta dos produtos que precisam de reposição;
+- `sp_limpar_sessoes_expiradas`: procedure chamada no login para remover sessões vencidas;
 - `TRG_ATUALIZA_ESTOQUE`: atualiza o saldo após cada inserção de movimentação;
 - gatilhos de auditoria e de imutabilidade do histórico.
 

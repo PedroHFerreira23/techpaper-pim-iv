@@ -64,3 +64,11 @@ RETURNS TABLE(id INTEGER,sku VARCHAR,nome VARCHAR,estoque INTEGER,preco_custo NU
 LANGUAGE sql AS $$
  SELECT "Id","Sku","Nome","Estoque","PrecoCusto",ROUND("Estoque"*"PrecoCusto",2) FROM produtos WHERE "Estoque"<p_limite ORDER BY "Estoque","Nome"
 $$;
+
+-- Procedure administrativa real, mantida separada das funções que retornam dados.
+-- Pode ser chamada por uma rotina de manutenção com: CALL sp_limpar_sessoes_expiradas();
+CREATE OR REPLACE PROCEDURE sp_limpar_sessoes_expiradas()
+LANGUAGE plpgsql AS $$
+BEGIN
+ DELETE FROM sessoes WHERE "ExpiraEm"<CURRENT_TIMESTAMP;
+END $$;
