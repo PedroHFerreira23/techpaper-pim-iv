@@ -1,7 +1,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const app = $('#app'); const modal = $('#modal'); const content = $('#modal-content');
-const state = { user: null, page: 'Visão geral', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], lastSync: null, menuOpen: false };
+const state = { user: null, page: 'Visão geral', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], relatos: [], lastSync: null, menuOpen: false };
 const avatars=[
  {id:1,symbol:'👩🏻‍🦱',label:'Pessoa de pele clara e cabelo cacheado'},
  {id:2,symbol:'👨🏼‍🦰',label:'Pessoa de pele clara média e cabelo ruivo'},
@@ -68,8 +68,8 @@ function form(fields,save,label='Salvar') {
 function renderLogin(){applyTheme();app.replaceChildren(el('main',{class:'login',id:'main'},el('section',{class:'login-intro'},brandLockup('',true),el('h1',{},'Tudo em ordem.\nDo estoque ao orçamento.'),el('p',{},'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')),el('section',{class:'login-form'},el('span',{class:'eyebrow'},'BEM-VINDO À EQUIPE'),el('h2',{},'Acesse sua conta'),el('p',{class:'muted'},'Entre com o acesso fornecido pelo administrador.'),(()=>{const f=el('form',{},field('E-mail','login','','email',{autocomplete:'username'}),field('Senha','password','','password',{autocomplete:'current-password'}),el('button',{type:'submit','aria-label':'Entrar'},'Entrar'));f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;try{const r=await api('usuarios/login',{method:'POST',body:Object.fromEntries(new FormData(f))});state.user=r.usuario;applyTheme();await refresh();}catch(err){notify(err.message);}finally{b.disabled=false;}};return f;})())));}
 let refreshing=false;
 async function refresh(){if(refreshing)return;refreshing=true;try{
- const names=['produtos','fornecedores','movimentacoes','orcamentos',...(state.user?.role==='Admin'?['usuarios']:[])];
- const [user,...values]=await Promise.all([api('usuarios/me'),...names.map(n=>api(n))]);state.user=user;names.forEach((n,i)=>state[n]=values[i]);state.lastSync=new Date();render();
+ const names=['produtos','fornecedores','movimentacoes','orcamentos','relatos-inclusao',...(state.user?.role==='Admin'?['usuarios']:[])];
+ const [user,...values]=await Promise.all([api('usuarios/me'),...names.map(n=>api(n))]);state.user=user;names.forEach((n,i)=>state[n]=values[i]);state.relatos=state['relatos-inclusao']||[];state.lastSync=new Date();render();
  }finally{refreshing=false;}}
 function dashboardCharts(){
  const palette=['#1e6b91','#2aa889','#e9a23b','#775da6','#d45b4c','#5f7890'];
@@ -93,7 +93,7 @@ function render(){if(!state.user)return renderLogin();
  const toggleMenu=()=>{state.menuOpen=!state.menuOpen;document.querySelector('.sidebar')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-backdrop')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-button')?.setAttribute('aria-expanded',String(state.menuOpen));};
  const menuButton=el('button',{type:'button',class:'menu-button','aria-label':'Abrir menu principal','aria-controls':'main-menu','aria-expanded':'false',onclick:toggleMenu},icon('fa-bars'));
  const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},menuButton,el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
- const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.5.1')));
+ const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.6.0')));
  const backdrop=el('button',{type:'button',class:'menu-backdrop','aria-label':'Fechar menu principal',onclick:closeMenu});
  app.replaceChildren(el('div',{class:'layout'},sidebar,backdrop,main));
  function mainFocus(){setTimeout(()=>main.focus(),0);}
@@ -119,10 +119,37 @@ function render(){if(!state.user)return renderLogin();
  }else if(state.page==='Usuários'){
   main.append(el('div',{class:'toolbar'},button('Novo usuário',()=>userForm())),table(['Nome','E-mail','Perfil','Ações'],state.usuarios.map(u=>[u.name,u.login,u.role,el('div',{class:'toolbar'},button('Editar',()=>userForm(u),'secondary'),u.id!==state.user.id?button('Desativar',()=>remove('usuarios',u.id),'danger'):null)])));
  }else if(state.page==='Relatórios'){reports(main);
- }else{main.append(el('div',{class:'support-hero'},el('span',{class:'support-icon'},icon('fa-hands-asl-interpreting')),el('div',{},el('span',{class:'eyebrow'},'ACESSIBILIDADE'),el('h2',{},'TechPaper para toda a equipe'),el('p',{},'Use o botão azul do VLibras no canto direito da tela para traduzir o conteúdo para Libras.'))),el('div',{class:'support-grid'},el('section',{class:'card'},el('h2',{},'Tecnologia acessível e respeito à diversidade'),el('p',{},'A equipe deve oferecer atendimento respeitoso, sem discriminação racial, religiosa, de gênero ou de origem. Perfis de acesso são definidos pela responsabilidade profissional.'),el('p',{},'O portal oferece navegação por teclado, foco visível, textos compatíveis com leitores de tela e tradução pelo VLibras. Você também pode ampliar a página pelo navegador.'),el('p',{},'Não coletamos raça, religião ou outras informações sensíveis para as operações de estoque e orçamento.')),el('section',{class:'card'},el('h2',{},'Como trabalhar com segurança'),el('p',{},'Cadastre produtos com estoque zero e registre entradas e saídas em Movimentações. Se faltar confirmação, use a opção de tentar novamente: o sistema mantém a identificação da operação.'),el('p',{},'Aprovações de orçamento são realizadas por administradores ou supervisores. O aplicativo usa os mesmos dados; atualize a tela para conferir mudanças feitas por outro colega.'))));}
+ }else{supportPage(main);}
  main.append(educationalBanner());
  if(!state.user.avatarSelecionado)setTimeout(()=>preferencesDialog(true),0);
  }
+
+// O canal registra manifestações com rastreabilidade e acesso limitado. Usuários
+// comuns veem apenas os próprios registros; a API libera a visão geral ao Admin.
+function supportPage(main){
+ const categoryLabels={Discriminacao:'Discriminação ou assédio',Acessibilidade:'Barreira de acessibilidade',Sugestao:'Sugestão de inclusão',Outro:'Outro assunto'};
+ const statusLabels={Recebido:'Recebido',EmAnalise:'Em análise',Concluido:'Concluído'};
+ const category=select('Assunto','categoria',Object.entries(categoryLabels));
+ const description=el('label',{},'Descreva o ocorrido ou a barreira',el('textarea',{name:'descricao',required:true,minlength:20,maxlength:2000,rows:6,'aria-label':'Descrição reservada do relato','aria-describedby':'privacy-help'}));
+ const privacy=el('p',{id:'privacy-help',class:'muted'},'O relato fica visível para você e para administradores responsáveis. Use informações objetivas e evite inserir dados pessoais de terceiros que não sejam necessários.');
+ const reportForm=form([category,description,privacy],async data=>{await api('relatos-inclusao',{method:'POST',body:data});},'Enviar relato reservado');
+ const updateStatus=async(id,status)=>{try{await api(`relatos-inclusao/${id}/status`,{method:'PATCH',body:{status}});await refresh();notify('Andamento atualizado.');}catch(error){notify(error.message);}};
+ const rows=state.relatos.map(item=>[
+  formatDateTime(item.dataCriacao),categoryLabels[item.categoria]||item.categoria,
+  el('div',{},state.user.role==='Admin'&&item.usuarioNome?el('strong',{},item.usuarioNome):null,el('p',{class:'report-description'},item.descricao)),
+  el('span',{class:'badge '+(item.status==='Concluido'?'success':item.status==='EmAnalise'?'warn':'')},statusLabels[item.status]||item.status),
+  state.user.role==='Admin'?el('div',{class:'toolbar'},item.status!=='EmAnalise'?button('Colocar em análise',()=>updateStatus(item.id,'EmAnalise'),'secondary'):null,item.status!=='Concluido'?button('Concluir',()=>updateStatus(item.id,'Concluido'),'secondary'):null):'Acompanhe o andamento nesta tela.'
+ ]);
+ main.append(
+  el('div',{class:'support-hero'},el('span',{class:'support-icon','aria-hidden':'true'},icon('fa-hands-asl-interpreting')),el('div',{},el('span',{class:'eyebrow'},'ACESSIBILIDADE E RESPEITO'),el('h2',{},'TechPaper para toda a equipe'),el('p',{},'Use o VLibras, os recursos de acessibilidade e o canal reservado para comunicar barreiras ou situações de discriminação.'))),
+  el('div',{class:'support-grid'},
+   el('section',{class:'card'},el('h2',{},'Práticas de convivência'),el('p',{},'Interrompa atitudes discriminatórias, acolha quem relata e comunique a situação com respeito e objetividade.'),el('p',{},'Valorize histórias, culturas, identidades e formas diferentes de participação. Perfis do sistema representam responsabilidades profissionais, nunca características pessoais.'),el('p',{},'O TechPaper não utiliza raça, religião ou outros dados sensíveis nas operações de estoque e orçamento.')),
+   el('section',{class:'card'},el('h2',{},'Recursos disponíveis'),el('p',{},'O portal oferece navegação por teclado, foco visível, conteúdo compatível com leitores de tela, contraste de tema e tradução pelo VLibras.'),el('p',{},'No aplicativo, todos os campos e botões possuem rótulos de acessibilidade. Os dados recentes permanecem disponíveis para consulta quando a conexão oscila.'))),
+  el('section',{class:'card report-card'},el('span',{class:'eyebrow'},'CANAL RESERVADO'),el('h2',{},'Relatar discriminação ou barreira de acesso'),reportForm),
+  el('div',{class:'section-heading'},el('div',{},el('span',{class:'eyebrow'},state.user.role==='Admin'?'ACOMPANHAMENTO ADMINISTRATIVO':'ACOMPANHAMENTO'),el('h2',{},state.user.role==='Admin'?'Relatos recebidos':'Meus relatos'))),
+  table(['Enviado em','Assunto','Relato','Andamento','Ação'],rows)
+ );
+}
 // A API devolve o usuário atualizado; assim, a interface nunca presume que a gravação foi aceita.
 function preferencesDialog(required=false){
  const selected=state.user.avatarSelecionado?state.user.avatarId:0;
