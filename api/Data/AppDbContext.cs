@@ -5,6 +5,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options):DbContext(opti
  public DbSet<Produto> Produtos=>Set<Produto>(); public DbSet<Fornecedor> Fornecedores=>Set<Fornecedor>();
  public DbSet<Usuario> Usuarios=>Set<Usuario>(); public DbSet<Movimentacao> Movimentacoes=>Set<Movimentacao>();
  public DbSet<Sessao> Sessoes=>Set<Sessao>(); public DbSet<Orcamento> Orcamentos=>Set<Orcamento>();
+ public DbSet<RelatoInclusao> RelatosInclusao=>Set<RelatoInclusao>();
  protected override void OnModelCreating(ModelBuilder m) {
   m.Entity<Usuario>().ToTable("usuarios"); m.Entity<Usuario>().HasIndex(x=>x.Login).IsUnique();
   m.Entity<Fornecedor>().ToTable("fornecedores");
@@ -24,5 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options):DbContext(opti
   m.Entity<ItemOrcamento>().ToTable("itens_orcamento");m.Entity<ItemOrcamento>().Property(x=>x.PrecoUnitario).HasPrecision(18,2);
   m.Entity<ItemOrcamento>().Property(x=>x.Subtotal).HasPrecision(18,2);
   m.Entity<ItemOrcamento>().HasOne<Produto>().WithMany().HasForeignKey(x=>x.ProdutoId).OnDelete(DeleteBehavior.Restrict);
+  m.Entity<RelatoInclusao>().ToTable("relatos_inclusao");
+  m.Entity<RelatoInclusao>().HasOne<Usuario>().WithMany().HasForeignKey(x=>x.UsuarioId).OnDelete(DeleteBehavior.Restrict);
  }
 }
