@@ -1,0 +1,53 @@
+name: Validar TechPaper
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  api-e-banco:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Restaurar dependências
+        run: dotnet restore api/TechPaperAPI.csproj
+      - name: Compilar API
+        run: dotnet build api/TechPaperAPI.csproj --configuration Release --no-restore
+      - name: Conferir artefatos obrigatórios do banco
+        shell: bash
+        run: |
+          grep -q 'CREATE OR REPLACE PROCEDURE' database/002_routines.sql
+          grep -q 'TRG_ATUALIZA_ESTOQUE' database/002_routines.sql
+          grep -q 'relatos_inclusao' database/001_schema.sql
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: mobile/pnpm-lock.yaml
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+      - name: Testar comunicação mobile
+        run: pnpm test
+      - name: Validar configuração do Expo
+        run: pnpm exec expo install --check
+      - name: Exportar pacote Android
+        run: pnpm exec expo export --platform android --no-bytecode --max-workers 1
