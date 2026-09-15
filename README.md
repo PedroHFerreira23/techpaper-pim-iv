@@ -13,8 +13,10 @@ Continuação programável do TechPaper apresentado no PIM III. O pacote reúne 
 - Portal web responsivo com menu hambúrguer em telas pequenas, gráficos de estoque e movimentações, painel de indicadores, VLibras, relatórios CSV e impressão/PDF.
 - Aplicativo Expo/React Native em JavaScript com os mesmos gráficos do portal, login, produtos, estoque, orçamentos, sincronização e sessão no armazenamento seguro do aparelho.
 - Tema claro/escuro, escolha obrigatória de avatar representativo e banners educativos rotativos sincronizados entre portal e aplicativo.
+- Canal reservado de inclusão para registrar discriminação, barreiras de acessibilidade e sugestões, com acompanhamento pelo autor e tratamento administrativo.
+- Consulta móvel dos últimos dados operacionais sincronizados durante oscilações de conexão; relatos reservados não entram nesse cache.
 - Atualização por gesto no mobile, rótulos de acessibilidade, navegação por teclado e integração com VLibras.
-- Script completo do banco, cinco funções armazenadas, quatro triggers, índices e consultas de verificação.
+- Script completo do banco, funções armazenadas, procedure de manutenção, triggers, índices e consultas de verificação.
 - Containerização e pipeline de validação.
 - Perfis EAS para APK de demonstração e AAB de publicação futura.
 - Implantação gratuita preparada para Render e Neon, além do roteiro de capturas Android.
@@ -65,7 +67,7 @@ O bootstrap cria o primeiro administrador apenas quando `usuarios` está vazia. 
 ## Verificação realizada
 
 - API compilada com .NET SDK 10.0.400: zero erros e zero avisos.
-- Dez testes de integração aprovados em banco descartável, incluindo preferências visuais, autorização, sigilo de senha, saldo insuficiente, concorrência, repetição segura, cálculo de orçamento, controle de versão e revogação da sessão.
+- Onze testes de integração preparados para banco descartável, incluindo preferências visuais, autorização, sigilo de senha, saldo insuficiente, concorrência, repetição segura, cálculo de orçamento, controle de versão, revogação da sessão e privacidade do canal de inclusão.
 - Seis testes da comunicação mobile aprovados.
 - Dependências verificadas pelo Expo: atualizadas para o SDK 57.
 - PostgreSQL descartável criado e conferido com oito tabelas, cinco funções, quatro triggers e índices.
@@ -73,7 +75,7 @@ O bootstrap cria o primeiro administrador apenas quando `usuarios` está vazia. 
 - Responsividade conferida em largura de 390 px: menu recolhível, conteúdo sem rolagem horizontal e gráficos empilhados.
 - Aplicativo exportado pelo Expo para Android com gráficos em SVG, atualização por gesto, ícone e tela de abertura.
 
-A versão móvel 1.5.0 usa o endereço da API como configuração interna: a tela de acesso solicita somente e-mail e senha. A [compilação Android 1.5.0](https://expo.dev/accounts/pdreoss-team/projects/techpaper-mobile/builds/cdabffd5-d22b-4b95-8278-da9303c9c9c4) utiliza a identidade visual oficial escolhida pela equipe.
+A versão móvel 1.6.0 usa o endereço da API como configuração interna: a tela de acesso solicita somente e-mail e senha. A versão acrescenta o canal reservado e a consulta dos últimos dados sincronizados quando a conexão oscila.
 
 ## Uso acadêmico
 

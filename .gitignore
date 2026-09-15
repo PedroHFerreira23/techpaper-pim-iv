@@ -19,3 +19,5 @@ pim3_extraido.txt
 **/.dotnet-home/
 outputs/.build/
 outputs/rendered_abnt*/
+
+**/dist/
