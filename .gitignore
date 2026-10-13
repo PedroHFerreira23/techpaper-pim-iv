@@ -21,3 +21,7 @@ outputs/.build/
 outputs/rendered_abnt*/
 
 **/dist/
+**/dist-check/
+/output/
+/tmp/
+/gcm-diagnose.log

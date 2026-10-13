@@ -2,7 +2,7 @@
   "expo": {
     "name": "TechPaper",
     "slug": "techpaper-mobile",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/techpaper-symbol-v5.png",
@@ -16,7 +16,7 @@
     ],
     "android": {
       "package": "com.techpaper.mobile",
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/techpaper-symbol-v5.png",
         "backgroundColor": "#ffffff"

@@ -23,6 +23,8 @@ const parseApiDate = value => {
 };
 const formatDateTime = value => { const date = parseApiDate(value); return date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'Data não informada'; };
 const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Inclusão', 'Conta'];
+const categoryAliases = { caderno: 'Cadernos', cadernos: 'Cadernos', escrita: 'Escrita', caneta: 'Escrita', canetas: 'Escrita', lapis: 'Escrita', 'material escolar': 'Material escolar', 'materiais escolares': 'Material escolar', organizacao: 'Organização', arte: 'Artes', artes: 'Artes', papelaria: 'Papelaria', outro: 'Outros', outros: 'Outros' };
+const formatCategory = value => { const text = String(value || '').trim().replace(/\s+/g, ' '); if (!text) return 'Sem categoria'; const key = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return categoryAliases[key] || text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(); };
 const avatars = [
   { id: 1, symbol: '👩🏻‍🦱', label: 'Pessoa de pele clara e cabelo cacheado' },
   { id: 2, symbol: '👨🏼‍🦰', label: 'Pessoa de pele clara média e cabelo ruivo' },
@@ -66,7 +68,7 @@ function EducationalBanner({ message }) { const { s } = useTheme(); return <View
 function DashboardCharts({ produtos, movimentacoes }) {
   const { s, colors } = useTheme();
   const palette = ['#1E6B91', '#2AA889', '#E9A23B', '#775DA6', '#D45B4C', '#5F7890'];
-  const totals = produtos.reduce((result, product) => { const category = product.categoria || 'Sem categoria'; result[category] = (result[category] || 0) + Number(product.estoque || 0); return result; }, {});
+  const totals = produtos.reduce((result, product) => { const category = formatCategory(product.categoria); result[category] = (result[category] || 0) + Number(product.estoque || 0); return result; }, {});
   const categories = Object.entries(totals); const total = categories.reduce((sum, [, value]) => sum + value, 0);
   const size = 176; const stroke = 24; const radius = (size - stroke) / 2; const circumference = 2 * Math.PI * radius; let offset = 0;
   const movementTotals = movimentacoes.reduce((result, movement) => { if (movement.tipo === 'Entrada') result.Entrada += Number(movement.quantidade); if (movement.tipo === 'Saida') result.Saida += Number(movement.quantidade); return result; }, { Entrada: 0, Saida: 0 });
@@ -250,7 +252,7 @@ function TechPaper() {
         {canApprove && detail.status === 'Rascunho' && ['Aprovado', 'Cancelado'].map(status => <Button key={status} title={status === 'Aprovado' ? 'Aprovar orçamento' : 'Cancelar orçamento'} secondary={status === 'Cancelado'} disabled={busy} onPress={() => run(async () => { const updated = await api(session)(`orcamentos/${detail.id}/status`, { method: 'PATCH', body: { status, versao: detail.versao } }); setDetail({ ...detail, ...updated, itens: detail.itens }); await sync(); })} />)}
         <Button title="Voltar à lista" secondary onPress={() => setDetail(null)} /></Card> : <>
       {tab === 'Resumo' && <><Text style={s.muted}>Uma visão do que precisa de atenção.</Text><Card><Text style={s.metric}>{data.produtos.length}</Text><Text>Produtos cadastrados</Text></Card><Card><Text style={s.metric}>{data.produtos.filter(p => p.estoque < 20).length}</Text><Text>Produtos com estoque abaixo de 20</Text></Card><Card><Text style={s.metric}>{data.orcamentos.filter(o => o.status === 'Rascunho').length}</Text><Text>Orçamentos em rascunho</Text></Card><DashboardCharts produtos={data.produtos} movimentacoes={data.movimentacoes} />{pending && <Button title="Concluir movimentação pendente" onPress={() => setTab('Estoque')} />}</>}
-      {tab === 'Produtos' && <><Field label="Buscar por nome ou SKU" value={search} onChangeText={setSearch} />{filtered.map(p => <Card key={p.id}><Text style={s.subtitle}>{p.nome}</Text><Text style={s.muted}>{p.sku} · {p.categoria}</Text><Text style={s.row}>{money(p.precoVenda)} · {p.estoque} unidades</Text><Text style={s.muted}>{p.fornecedor}</Text></Card>)}{!filtered.length && <Text>Nenhum produto encontrado.</Text>}</>}
+      {tab === 'Produtos' && <><Field label="Buscar por nome ou SKU" value={search} onChangeText={setSearch} />{filtered.map(p => <Card key={p.id}><Text style={s.subtitle}>{p.nome}</Text><Text style={s.muted}>{p.sku} · {formatCategory(p.categoria)}</Text><Text style={s.row}>{money(p.precoVenda)} · {p.estoque} unidades</Text><Text style={s.muted}>{p.fornecedor}</Text></Card>)}{!filtered.length && <Text>Nenhum produto encontrado.</Text>}</>}
       {tab === 'Estoque' && <>
         <Card><Text style={s.subtitle}>Registrar movimentação</Text>
           {pending ? <><Text style={s.notice}>Uma operação aguarda confirmação. A nova tentativa usa a mesma identificação para evitar duplicidade.</Text><Text>{pending.tipo} · {pending.quantidade} unidade(s) · Produto #{pending.produtoId}</Text></> : <>{picker}<View style={s.actions}>{['Entrada', 'Saida'].map(t => <Button key={t} title={`${tipo === t ? '✓ ' : ''}${t === 'Saida' ? 'Saída' : t}`} secondary={tipo !== t} onPress={() => setTipo(t)} />)}</View><Field label="Quantidade" value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" /><Field label="Motivo" value={motivo} onChangeText={setMotivo} maxLength={100} /></>}

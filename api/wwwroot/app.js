@@ -1,7 +1,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const app = $('#app'); const modal = $('#modal'); const content = $('#modal-content');
-const state = { user: null, page: 'Visão geral', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], relatos: [], lastSync: null, menuOpen: false };
+const state = { user: null, page: 'Resumo', produtos: [], fornecedores: [], movimentacoes: [], orcamentos: [], usuarios: [], relatos: [], lastSync: null, menuOpen: false };
 const avatars=[
  {id:1,symbol:'👩🏻‍🦱',label:'Pessoa de pele clara e cabelo cacheado'},
  {id:2,symbol:'👨🏼‍🦰',label:'Pessoa de pele clara média e cabelo ruivo'},
@@ -10,6 +10,9 @@ const avatars=[
  {id:5,symbol:'👨🏿‍🦲',label:'Pessoa de pele escura e cabeça raspada'},
  {id:6,symbol:'🧕🏽',label:'Pessoa de pele média usando lenço'}
 ];
+const productCategories=['Cadernos','Escrita','Material escolar','Organização','Artes','Papelaria','Outros'];
+const categoryAliases={caderno:'Cadernos',cadernos:'Cadernos',escrita:'Escrita',caneta:'Escrita',canetas:'Escrita',lapis:'Escrita','material escolar':'Material escolar','materiais escolares':'Material escolar',organizacao:'Organização',arte:'Artes',artes:'Artes',papelaria:'Papelaria',outro:'Outros',outros:'Outros'};
+function formatCategory(value){const text=String(value||'').trim().replace(/\s+/g,' ');if(!text)return 'Sem categoria';const key=text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return categoryAliases[key]||text.charAt(0).toUpperCase()+text.slice(1).toLowerCase();}
 const educationalMessages=[
  'Respeito não tem cor: atitudes inclusivas tornam a equipe mais forte.',
  'Discriminação racial deve ser reconhecida, interrompida e comunicada.',
@@ -73,7 +76,7 @@ async function refresh(){if(refreshing)return;refreshing=true;try{
  }finally{refreshing=false;}}
 function dashboardCharts(){
  const palette=['#1e6b91','#2aa889','#e9a23b','#775da6','#d45b4c','#5f7890'];
- const categoryTotals={};for(const product of state.produtos){const name=product.categoria||'Sem categoria';categoryTotals[name]=(categoryTotals[name]||0)+Number(product.estoque||0);}
+ const categoryTotals={};for(const product of state.produtos){const name=formatCategory(product.categoria);categoryTotals[name]=(categoryTotals[name]||0)+Number(product.estoque||0);}
  const categories=Object.entries(categoryTotals);const total=categories.reduce((sum,[,value])=>sum+value,0);let cursor=0;
  const slices=categories.map(([,value],index)=>{const start=cursor;cursor+=total?value/total*100:0;return `${palette[index%palette.length]} ${start}% ${cursor}%`;});
  const donut=el('div',{class:'donut-chart',role:'img','aria-label':categories.length?categories.map(([name,value])=>`${name}: ${value} unidades`).join(', '):'Sem estoque cadastrado'});
@@ -85,20 +88,20 @@ function dashboardCharts(){
 }
 function render(){if(!state.user)return renderLogin();
  applyTheme();
- const pages=['Visão geral','Produtos','Fornecedores','Estoque','Movimentações','Orçamentos','Relatórios',...(state.user.role==='Admin'?['Usuários']:[]),'Suporte e inclusão'];
- const pageIcons={'Visão geral':'fa-chart-line','Produtos':'fa-tags','Fornecedores':'fa-truck-field','Estoque':'fa-boxes-stacked','Movimentações':'fa-right-left','Orçamentos':'fa-file-invoice-dollar','Relatórios':'fa-chart-column','Usuários':'fa-users-gear','Suporte e inclusão':'fa-hands-asl-interpreting'};
+ const pages=['Resumo','Produtos','Fornecedores','Estoque','Movimentações','Orçamentos','Relatórios',...(state.user.role==='Admin'?['Usuários']:[]),'Inclusão','Conta'];
+ const pageIcons={'Resumo':'fa-chart-line','Produtos':'fa-tags','Fornecedores':'fa-truck-field','Estoque':'fa-boxes-stacked','Movimentações':'fa-right-left','Orçamentos':'fa-file-invoice-dollar','Relatórios':'fa-chart-column','Usuários':'fa-users-gear','Inclusão':'fa-hands-asl-interpreting','Conta':'fa-user-circle'};
  const closeMenu=()=>{state.menuOpen=false;document.querySelector('.sidebar')?.classList.remove('open');document.querySelector('.menu-backdrop')?.classList.remove('open');document.querySelector('.menu-button')?.setAttribute('aria-expanded','false');};
  const nav=el('nav',{id:'main-menu','aria-label':'Navegação principal'},pages.map(p=>el('button',{type:'button','aria-label':`Abrir ${p}`,class:p===state.page?'active':'',onclick:()=>{state.page=p;closeMenu();render();mainFocus();}},el('span',{class:'nav-icon','aria-hidden':'true'},icon(pageIcons[p])),el('span',{},p))));
- const profileButton=el('button',{type:'button',class:'user-summary profile-button','aria-label':'Abrir preferências de tema e avatar',onclick:preferencesDialog},el('span',{class:'user-avatar','aria-hidden':'true'},avatarOf(state.user.avatarId).symbol),el('span',{class:'profile-copy'},el('strong',{},state.user.name),el('span',{class:'muted'},state.user.role)));
+ const profileButton=el('button',{type:'button',class:'user-summary profile-button','aria-label':'Abrir a seção Conta',onclick:()=>{state.page='Conta';render();mainFocus();}},el('span',{class:'user-avatar','aria-hidden':'true'},avatarOf(state.user.avatarId).symbol),el('span',{class:'profile-copy'},el('strong',{},state.user.name),el('span',{class:'muted'},state.user.role)));
  const toggleMenu=()=>{state.menuOpen=!state.menuOpen;document.querySelector('.sidebar')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-backdrop')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-button')?.setAttribute('aria-expanded',String(state.menuOpen));};
  const menuButton=el('button',{type:'button',class:'menu-button','aria-label':'Abrir menu principal','aria-controls':'main-menu','aria-expanded':'false',onclick:toggleMenu},icon('fa-bars'));
  const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},menuButton,el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
- const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.6.0')));
+ const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.6.1')));
  const backdrop=el('button',{type:'button',class:'menu-backdrop','aria-label':'Fechar menu principal',onclick:closeMenu});
  app.replaceChildren(el('div',{class:'layout'},sidebar,backdrop,main));
  function mainFocus(){setTimeout(()=>main.focus(),0);}
  const manager=['Admin','Supervisor'].includes(state.user.role);
- if(state.page==='Visão geral'){
+ if(state.page==='Resumo'){
   const entradasHoje=state.movimentacoes.filter(m=>m.tipo==='Entrada'&&isToday(m.dataHora)).reduce((sum,m)=>sum+m.quantidade,0);
   const saidasHoje=state.movimentacoes.filter(m=>m.tipo==='Saida'&&isToday(m.dataHora)).reduce((sum,m)=>sum+m.quantidade,0);
   main.append(el('p',{class:'muted page-lead'},'Acompanhe os números principais e o movimento da papelaria em tempo real.'),el('div',{class:'dashboard-stats'},[
@@ -106,10 +109,10 @@ function render(){if(!state.user)return renderLogin();
   ].map(([symbol,label,value,tone])=>el('section',{class:'card stat-card '+tone},el('span',{class:'stat-icon','aria-hidden':'true'},icon(symbol)),el('div',{},el('div',{class:'muted'},label),el('div',{class:'metric'},value))))),dashboardCharts(),el('div',{class:'overview-lower'},el('section',{},el('div',{class:'section-heading'},el('div',{},el('span',{class:'eyebrow'},'ATENÇÃO'),el('h2',{},'Reposição de estoque')),el('span',{class:'badge warn'},state.produtos.filter(p=>p.estoque<20).length+' itens')),table(['Produto','SKU','Saldo'],state.produtos.filter(p=>p.estoque<20).map(p=>[p.nome,p.sku,el('span',{class:'badge warn'},p.estoque+' unidades')]))),el('section',{},el('div',{class:'section-heading'},el('div',{},el('span',{class:'eyebrow'},'ATIVIDADE'),el('h2',{},'Últimas movimentações')),button('Ver histórico',()=>{state.page='Movimentações';render();},'secondary')),table(['Data','Produto','Tipo'],state.movimentacoes.slice(0,5).map(m=>[formatDateTime(m.dataHora),m.produtoNome,el('span',{class:'badge '+(m.tipo==='Entrada'?'success':'danger')},m.tipo==='Saida'?'Saída':m.tipo)])))));
  }else if(state.page==='Produtos'){
   const area=el('div');const search=el('input',{placeholder:'Buscar por nome ou SKU','aria-label':'Buscar produto',oninput:()=>draw()});
-  function draw(){const query=search.value.toLowerCase();area.replaceChildren(table(['Produto','Categoria','Fornecedor','Venda','Saldo','Ações'],state.produtos.filter(p=>(p.nome+p.sku).toLowerCase().includes(query)).map(p=>[el('div',{},el('strong',{},p.nome),el('div',{class:'muted'},p.sku)),p.categoria,p.fornecedor,brl(p.precoVenda),p.estoque,el('div',{class:'toolbar'},manager?button('Editar',()=>productForm(p),'secondary'):null,state.user.role==='Admin'?button('Excluir',()=>remove('produtos',p.id),'danger'):null)])));}
+  function draw(){const query=search.value.toLowerCase();area.replaceChildren(table(['Produto','Categoria','Fornecedor','Venda','Saldo','Ações'],state.produtos.filter(p=>(p.nome+p.sku).toLowerCase().includes(query)).map(p=>[el('div',{},el('strong',{},p.nome),el('div',{class:'muted'},p.sku)),formatCategory(p.categoria),p.fornecedor,brl(p.precoVenda),p.estoque,el('div',{class:'toolbar'},manager?button('Editar',()=>productForm(p),'secondary'):null,state.user.role==='Admin'?button('Excluir',()=>remove('produtos',p.id),'danger'):null)])));}
   main.append(el('div',{class:'toolbar'},search,manager?button('Novo produto',()=>productForm()):null),area);draw();
  }else if(state.page==='Estoque'){
-  main.append(el('div',{class:'page-actions'},el('p',{class:'muted'},'Consulte o saldo atual e identifique os itens que precisam de reposição.'),button('Registrar movimentação',()=>movementForm())),table(['SKU','Produto','Categoria','Saldo atual','Situação','Valor em estoque'],state.produtos.map(p=>[p.sku,p.nome,p.categoria,el('strong',{},p.estoque+' un.'),el('span',{class:'badge '+(p.estoque<20?'warn':'success')},p.estoque<20?'Estoque baixo':'Regular'),brl(p.estoque*p.precoCusto)])));
+  main.append(el('div',{class:'page-actions'},el('p',{class:'muted'},'Consulte o saldo atual e identifique os itens que precisam de reposição.'),button('Registrar movimentação',()=>movementForm())),table(['SKU','Produto','Categoria','Saldo atual','Situação','Valor em estoque'],state.produtos.map(p=>[p.sku,p.nome,formatCategory(p.categoria),el('strong',{},p.estoque+' un.'),el('span',{class:'badge '+(p.estoque<20?'warn':'success')},p.estoque<20?'Estoque baixo':'Regular'),brl(p.estoque*p.precoCusto)])));
  }else if(state.page==='Movimentações'){
   main.append(el('div',{class:'page-actions'},el('p',{class:'muted'},'Entradas e saídas ficam registradas com data, hora e responsável. O histórico não pode ser apagado.'),button('Nova movimentação',()=>movementForm())),table(['Data e hora','Produto','Tipo','Quantidade','Motivo','Responsável'],state.movimentacoes.map(m=>[formatDateTime(m.dataHora),m.produtoNome,el('span',{class:'badge '+(m.tipo==='Entrada'?'success':'danger')},m.tipo==='Saida'?'Saída':m.tipo),m.quantidade,m.motivo,m.responsavel])));
  }else if(state.page==='Fornecedores'){
@@ -119,10 +122,20 @@ function render(){if(!state.user)return renderLogin();
  }else if(state.page==='Usuários'){
   main.append(el('div',{class:'toolbar'},button('Novo usuário',()=>userForm())),table(['Nome','E-mail','Perfil','Ações'],state.usuarios.map(u=>[u.name,u.login,u.role,el('div',{class:'toolbar'},button('Editar',()=>userForm(u),'secondary'),u.id!==state.user.id?button('Desativar',()=>remove('usuarios',u.id),'danger'):null)])));
  }else if(state.page==='Relatórios'){reports(main);
- }else{supportPage(main);}
+ }else if(state.page==='Inclusão'){supportPage(main);
+ }else if(state.page==='Conta'){accountPage(main);}
  main.append(educationalBanner());
  if(!state.user.avatarSelecionado)setTimeout(()=>preferencesDialog(true),0);
  }
+
+function accountPage(main){
+ const gallery=el('div',{class:'avatar-gallery',role:'radiogroup','aria-label':'Galeria de avatares'},avatars.map(a=>el('button',{type:'button',role:'radio',class:'avatar-option'+(a.id===state.user.avatarId?' selected':''),'aria-label':a.label,'aria-checked':a.id===state.user.avatarId,onclick:()=>savePreferences(state.user.temaEscuro,a.id,false)},el('span',{'aria-hidden':'true'},a.symbol),el('small',{},`Opção ${a.id}`))));
+ main.append(el('div',{class:'account-grid'},
+  el('section',{class:'card account-card'},el('div',{class:'account-profile'},el('span',{class:'account-avatar','aria-hidden':'true'},avatarOf(state.user.avatarId).symbol),el('div',{},el('h2',{},state.user.name),el('p',{class:'muted'},state.user.login),el('span',{class:'badge'},`Perfil: ${state.user.role}`))),el('h2',{},'Escolha seu avatar'),el('p',{class:'muted'},'A escolha fica associada à sua conta. O sistema armazena somente o número do avatar e não registra raça ou etnia.'),gallery,button(state.user.temaEscuro?'Usar tema claro':'Usar tema escuro',()=>savePreferences(!state.user.temaEscuro,state.user.avatarId,false),'theme-toggle'),button('Sair da conta',logout,'secondary')),
+  el('section',{class:'card'},el('h2',{},'Uma ferramenta para toda a equipe'),el('p',{},'Atendimento respeitoso e igualdade de acesso fazem parte do TechPaper. O avatar é uma representação escolhida pelo usuário; o sistema não registra raça, religião ou outros dados sensíveis.'),el('p',{},'Use o contraste de tema, a navegação por teclado, leitores de tela e o VLibras conforme a sua necessidade.'),button('Abrir suporte e inclusão',()=>{state.page='Inclusão';render();},'secondary'))));
+}
+
+async function logout(){try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}}
 
 // O canal registra manifestações com rastreabilidade e acesso limitado. Usuários
 // comuns veem apenas os próprios registros; a API libera a visão geral ao Admin.
@@ -158,13 +171,13 @@ function preferencesDialog(required=false){
  modal.oncancel=required?event=>event.preventDefault():null;
  showDialog(required?'Escolha seu avatar para continuar':'Aparência e inclusão',el('div',{},el('p',{class:'muted'},required?'A seleção é obrigatória no primeiro acesso e poderá ser alterada depois.':'Escolha uma representação visual. O TechPaper salva apenas o número do avatar e não registra raça ou etnia.'),gallery,required?null:button(themeLabel,()=>savePreferences(!state.user.temaEscuro,state.user.avatarId),'theme-toggle'),required?null:button('Fechar',()=>modal.close(),'secondary')));
 }
-async function savePreferences(temaEscuro,avatarId){
- try{const user=await api('usuarios/me/preferencias',{method:'PATCH',body:{temaEscuro,avatarId}});state.user=user;modal.oncancel=null;modal.close();applyTheme();render();notify('Preferências atualizadas.');}
+async function savePreferences(temaEscuro,avatarId,closeDialog=true){
+ try{const user=await api('usuarios/me/preferencias',{method:'PATCH',body:{temaEscuro,avatarId}});state.user=user;modal.oncancel=null;if(closeDialog&&modal.open)modal.close();applyTheme();render();notify('Preferências atualizadas.');}
  catch(e){notify(e.message);}
 }
 async function remove(path,id){if(!confirm('Confirma esta operação? Registros vinculados a histórico serão preservados.'))return;try{await api(`${path}/${id}`,{method:'DELETE'});await refresh();}catch(e){notify(e.message);}}
-function productForm(p={}){showDialog(p.id?'Editar produto':'Novo produto',form([
- field('SKU','sku',p.sku||'','text',{maxlength:50}),field('Nome','nome',p.nome||'','text',{maxlength:100}),field('Categoria','categoria',p.categoria||'','text',{maxlength:50}),
+function productForm(p={}){const currentCategory=p.id?formatCategory(p.categoria):productCategories[0];showDialog(p.id?'Editar produto':'Novo produto',form([
+ field('SKU','sku',p.sku||'','text',{maxlength:50}),field('Nome','nome',p.nome||'','text',{maxlength:100}),select('Categoria','categoria',[...new Set([...productCategories,currentCategory])].map(value=>[value,value]),currentCategory),
  select('Fornecedor','fornecedorId',state.fornecedores.map(f=>[f.id,f.nomeFantasia]),p.fornecedorId),field('Preço de custo','precoCusto',p.precoCusto||0,'number',{min:0,step:'.01'}),field('Preço de venda','precoVenda',p.precoVenda||0,'number',{min:0,step:'.01'}),el('p',{class:'note'},'O saldo é alterado exclusivamente em Movimentações.')
 ],async d=>{await api('produtos'+(p.id?'/'+p.id:''),{method:p.id?'PUT':'POST',body:{...d,fornecedorId:Number(d.fornecedorId),precoCusto:Number(d.precoCusto),precoVenda:Number(d.precoVenda),estoque:p.estoque||0}});}));}
 function supplierForm(f={}){showDialog(f.id?'Editar fornecedor':'Novo fornecedor',form([
@@ -189,7 +202,7 @@ function quoteDetail(o){const body=el('div',{},el('p',{},o.cliente+' · '+o.stat
 function reports(main){let rows=[];let headers=[];const area=el('div');const type=select('Relatório','tipo',[['estoque','Estoque atual'],['critico','Estoque abaixo de 20'],['movimentos','Movimentações']]);const start=field('De','inicio','','date',{required:false});const end=field('Até','fim','','date',{required:false});
  function draw(){const t=type.querySelector('select').value;const a=start.querySelector('input').value,b=end.querySelector('input').value;
  if(t==='movimentos'){headers=['Data','Produto','Tipo','Quantidade','Motivo','Responsável'];rows=state.movimentacoes.filter(m=>{const key=dateKey(m.dataHora);return key&&(!a||key>=a)&&(!b||key<=b);}).map(m=>[formatDateTime(m.dataHora),m.produtoNome,m.tipo==='Saida'?'Saída':m.tipo,m.quantidade,m.motivo,m.responsavel]);}
- else{headers=['SKU','Produto','Categoria','Saldo','Custo unitário','Valor em estoque'];rows=state.produtos.filter(p=>t!=='critico'||p.estoque<20).map(p=>[p.sku,p.nome,p.categoria,p.estoque,brl(p.precoCusto),brl(p.estoque*p.precoCusto)]);}
+ else{headers=['SKU','Produto','Categoria','Saldo','Custo unitário','Valor em estoque'];rows=state.produtos.filter(p=>t!=='critico'||p.estoque<20).map(p=>[p.sku,p.nome,formatCategory(p.categoria),p.estoque,brl(p.precoCusto),brl(p.estoque*p.precoCusto)]);}
  area.replaceChildren(table(headers,rows));}
  const csv=()=>{const safe=v=>{let t=String(v);if(/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replaceAll('"','""')+'"';};const blob=new Blob(['\uFEFF'+[headers,...rows].map(r=>r.map(safe).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});const link=el('a',{download:'techpaper-relatorio.csv',href:URL.createObjectURL(blob)});link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);};
  main.append(el('p',{class:'muted'},'CSV compatível com Excel. Para PDF, use a opção de salvar na janela de impressão. O período usa datas em UTC e se aplica às movimentações.'),el('div',{class:'grid'},type,start,end),el('div',{class:'toolbar'},button('Aplicar filtros',draw),button('Exportar CSV',csv,'secondary'),button('Imprimir / salvar PDF',()=>window.print(),'secondary')),area);draw();}
