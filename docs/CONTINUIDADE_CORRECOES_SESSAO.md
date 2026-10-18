@@ -23,3 +23,7 @@ Nenhuma mudança em API, schema ou regra de estoque/orçamento. Os 11 testes Pyt
 Testar em aparelho/navegador reais: troca entre duas contas, sessão expirada, logout durante atualização, erro no onboarding e leitura do alerta no diálogo. Conferir proxy HTTPS/cookie no ambiente de hospedagem. Não foi gerado APK/AAB nem feito deploy nesta branch. Recursos como paginação, idempotência de orçamentos e migrações versionadas permanecem melhorias futuras, sem alteração silenciosa de escopo.
 
 README/LEIA_PRIMEIRO foram alinhados à URL interna do app, às nove tabelas e à execução dos novos testes. AGENTS.md passa a registrar as regras permanentes de desenvolvimento.
+
+## Atualização após a primeira execução do CI
+
+A compilação .NET Release e os testes web/mobile passaram no GitHub Actions. O check online do Expo identificou um patch esperado de ~57.0.30, acima do 57.0.28 do snapshot. A dependência Expo foi atualizada para ~57.0.30, com seu lockfile, sem mudança de SDK principal. O pipeline deve ser conferido novamente no commit que contém esse ajuste.
