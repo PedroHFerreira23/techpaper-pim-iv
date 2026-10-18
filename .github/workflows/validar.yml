@@ -12,6 +12,20 @@ permissions:
 jobs:
   api-e-banco:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: techpaper_integration
+          POSTGRES_USER: techpaper_test
+          POSTGRES_PASSWORD: disposable-ci-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U techpaper_test -d techpaper_integration"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -34,6 +48,48 @@ jobs:
           grep -q 'CREATE OR REPLACE PROCEDURE' database/002_routines.sql
           grep -q 'TRG_ATUALIZA_ESTOQUE' database/002_routines.sql
           grep -q 'relatos_inclusao' database/001_schema.sql
+
+      - name: Iniciar API com banco descartável
+        env:
+          ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5432;Database=techpaper_integration;Username=techpaper_test;Password=disposable-ci-password
+          DatabaseInit__Enabled: 'true'
+          Bootstrap__Enabled: 'true'
+          Bootstrap__Login: admin-ci@example.com
+          Bootstrap__Password: Disposable-Integration-2026!
+          ASPNETCORE_URLS: http://127.0.0.1:5184
+        run: |
+          dotnet api/bin/Release/net10.0/TechPaperAPI.dll > "$RUNNER_TEMP/techpaper-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/techpaper-api.pid"
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5184/health/ready; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/techpaper-api.log"
+          exit 1
+      - name: Executar integração real da API com PostgreSQL
+        env:
+          TP_TEST_ALLOW_MUTATIONS: '1'
+          TP_TEST_URL: http://127.0.0.1:5184
+          TP_TEST_LOGIN: admin-ci@example.com
+          TP_TEST_PASSWORD: Disposable-Integration-2026!
+        run: python3 -m unittest discover -s tests -p '*test.py' -v
+      - name: Verificar gatilhos e consistência do PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: techpaper_integration
+          PGUSER: techpaper_test
+          PGPASSWORD: disposable-ci-password
+        run: psql -v ON_ERROR_STOP=1 -f tests/database_checks.sql
+      - name: Mostrar logs da API em caso de falha
+        if: failure()
+        run: cat "$RUNNER_TEMP/techpaper-api.log" 2>/dev/null || true
+      - name: Encerrar API de testes
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/techpaper-api.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/techpaper-api.pid")" 2>/dev/null || true
+          fi
 
   mobile:
     runs-on: ubuntu-latest
