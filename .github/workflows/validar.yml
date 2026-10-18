@@ -21,6 +21,13 @@ jobs:
         run: dotnet restore api/TechPaperAPI.csproj
       - name: Compilar API
         run: dotnet build api/TechPaperAPI.csproj --configuration Release --no-restore
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verificar JavaScript e isolamento de sessão web
+        run: |
+          node --check api/wwwroot/app.js
+          node --test tests/web_session.test.mjs
       - name: Conferir artefatos obrigatórios do banco
         shell: bash
         run: |

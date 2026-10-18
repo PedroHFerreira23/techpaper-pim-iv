@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "check": "expo install --check",
-    "test": "node --test --test-isolation=none tests/api.test.mjs",
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
     "export:android": "expo export --platform android",
     "build:apk": "pnpm dlx eas-cli build --platform android --profile preview",
     "build:aab": "pnpm dlx eas-cli build --platform android --profile production"

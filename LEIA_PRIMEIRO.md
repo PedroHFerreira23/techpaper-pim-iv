@@ -14,7 +14,7 @@ Esta versão foi preparada para funcionar sem Railway e sem serviço obrigatóri
 3. Na Render, escolha `New > Blueprint`, conecte o repositório e use o `render.yaml` já incluído.
 4. Preencha somente na Render os segredos `DATABASE_URL`, `Bootstrap__Login` e `Bootstrap__Password`.
 5. Aguarde o deploy e confirme `/health/ready`.
-6. Na pasta `mobile`, gere o APK com o perfil `preview` e informe a URL HTTPS da Render na tela de acesso.
+6. Na pasta `mobile`, configure `EXPO_PUBLIC_API_URL` com a origem HTTPS da API antes do build e gere o APK com o perfil `preview`. O aplicativo solicita apenas e-mail e senha.
 
 O banco é criado automaticamente no primeiro deploy. Não coloque senhas, tokens ou a conexão da Neon no GitHub. O passo a passo completo, as capturas necessárias e os limites gratuitos estão em `docs/FINALIZACAO_ANDROID_E_NUVEM.md`.
 
