@@ -14,7 +14,7 @@ Escopo: raiz do repositório e seus descendentes, salvo regra local mais especí
 - mobile/: Expo/React Native em JavaScript, pnpm e pnpm-lock.yaml.
 - database/: schema, funções/procedure, triggers, demonstração e verificações PostgreSQL.
 - tests/integration_test.py: integração mutável, somente ambiente descartável.
-- .github/workflows/validar.yml: compilação API, verificações textuais SQL e validação/exportação mobile.
+- .github/workflows/validar.yml: compilação API, integração real com PostgreSQL descartável, verificações SQL e validação/exportação mobile.
 - docs/ e outputs/: documentação e entregas; não representam automaticamente o estado implantado.
 
 ## Contratos e segurança

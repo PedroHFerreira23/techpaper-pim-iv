@@ -27,3 +27,16 @@ README/LEIA_PRIMEIRO foram alinhados à URL interna do app, às nove tabelas e �
 ## Atualização após a primeira execução do CI
 
 A compilação .NET Release e os testes web/mobile passaram no GitHub Actions. O check online do Expo identificou um patch esperado de ~57.0.30, acima do 57.0.28 do snapshot. A dependência Expo foi atualizada para ~57.0.30, com seu lockfile, sem mudança de SDK principal. O pipeline deve ser conferido novamente no commit que contém esse ajuste.
+
+## Integração real concluída
+
+A execução https://github.com/PedroHFerreira23/techpaper-pim-iv/actions/runs/39092182239 validou o commit 2397283c1d74acf4f63fee1e46495d37b27c5dca em 18/10/2026.
+
+- API .NET 10 compilada em Release e iniciada com banco PostgreSQL 17 descartável.
+- Onze testes de integração executados e aprovados, sem casos ignorados: autenticação/perfis, sigilo de senha, identidade/idempotência, concorrência, saldo insuficiente, orçamento/versão, origem, logout, preferências e inclusão.
+- `tests/database_checks.sql` aprovado: INSERT direto aplica saldo uma vez, auditoria registra mudança, UPDATE/DELETE de histórico são bloqueados, saída inválida reverte atomicamente e saldos/totais permanecem consistentes. Dados auxiliares revertidos com ROLLBACK.
+- Quatorze testes mobile e quatro web, check online Expo e exportação Android aprovados na mesma execução.
+
+O workflow mantém essa integração nas próximas alterações. Nenhum dado de produção foi usado. Não surgiu falha de regra de negócio nesta suíte que exigisse alterar controllers, services ou schema.
+
+Publicação e dispositivo continuam separados da aprovação automatizada. O PR #3 permanece aberto: a revisão automática de aprovação bloqueou o merge por ausência de autorização explícita para integrar à main. O endpoint público /health/ready respondeu ready na consulta de leitura, mas isso não comprova publicação da branch. EAS CLI e navegador não tinham sessão Expo autenticada; nenhum aparelho físico/adb foi disponibilizado. Não declarar APK atualizado ou teste físico realizado sem essas etapas.

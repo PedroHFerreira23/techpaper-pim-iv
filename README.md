@@ -86,3 +86,7 @@ O código é a implementação. O relatório deve descrever decisões, resultado
 A troca de conta limpa dados e formulários locais. Respostas antigas de sincronização são descartadas, e a persistência mobile é serializada com a limpeza da sessão. Movimentações pendentes permanecem protegidas por usuário para permitir confirmação posterior sem duplicidade. O onboarding mobile mostra falhas de gravação do avatar e oferece saída; erros de formulários web aparecem dentro do diálogo.
 
 Execute `node --test tests/web_session.test.mjs` para as regressões web e `pnpm test` em `mobile/` para comunicação e ciclo de sessão. O resultado do CI da versão em uso deve ser consultado; relatos anteriores de validação não substituem uma nova execução.
+
+## Integração PostgreSQL no CI
+
+O job `api-e-banco` inicia PostgreSQL 17 e a API em ambiente descartável, executa os 11 testes de integração e verifica gatilhos, auditoria, imutabilidade e consistência por SQL. As credenciais do workflow são exclusivas desse banco temporário. A execução [39092182239](https://github.com/PedroHFerreira23/techpaper-pim-iv/actions/runs/39092182239) aprovou integração, testes dos clientes e exportação Android. Isso não substitui validação de aparelho físico ou confirmação da versão publicada.
