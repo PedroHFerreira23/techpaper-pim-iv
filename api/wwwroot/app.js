@@ -41,7 +41,14 @@ const dateKey = value => {const date=parseApiDate(value);return date?new Intl.Da
 const isToday = value => dateKey(value)===dateKey(new Date());
 const uuid = () => '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
 let noticeTimer;
-function notify(message) { const n=$('#notice');n.textContent=message;n.hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>n.hidden=true,8000); }
+let sessionRevision=0;
+function clearSession(){
+ sessionRevision++;refreshing=false;state.user=null;state.page='Resumo';state.menuOpen=false;state.lastSync=null;
+ for(const key of ['produtos','fornecedores','movimentacoes','orcamentos','usuarios','relatos','relatos-inclusao'])state[key]=[];
+ modal.oncancel=null;modal.close();content.replaceChildren();$('#notice').hidden=true;clearTimeout(noticeTimer);
+ renderLogin();
+}
+function notify(message) { const n=modal.open?content.querySelector('[data-dialog-notice]')||content.appendChild(el('p',{'data-dialog-notice':'',role:'alert',class:'note'})):$('#notice');n.textContent=message;n.hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>n.hidden=true,8000); }
 function el(tag,props={},...children) {
  const node=document.createElement(tag);
  for(const [key,value] of Object.entries(props)){if(key.startsWith('on'))node.addEventListener(key.slice(2),value);else if(key==='class')node.className=value;else if(key==='text')node.textContent=value;else if(value!==false&&value!=null)node.setAttribute(key,value===true?'':value);}
@@ -52,11 +59,13 @@ const button=(text,click,cls='')=>el('button',{type:'button',class:cls,onclick:c
 const icon=className=>el('i',{class:`fa-solid ${className}`,'aria-hidden':'true'});
 const brandLockup=(tagline='Sistema de Gestão',full=false)=>full?el('img',{class:'brand-full-logo',src:'assets/techpaper-logo-v5-dark.png',alt:'TechPaper, papelaria no digital'}):el('div',{class:'brand-lockup'},el('img',{class:'brand-logo',src:'assets/techpaper-symbol-v5.png',alt:'Símbolo TechPaper'}),el('div',{},el('div',{class:'brand'},'TechPaper'),el('small',{},tagline)));
 async function api(path,options={}) {
+ const revision=sessionRevision;
  const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
  try {
   const response=await fetch('/api/'+path,{...options,signal:ctrl.signal,headers:{'Content-Type':'application/json','X-TechPaper-Client':'web',...options.headers},body:options.body===undefined?undefined:JSON.stringify(options.body)});
   const data=response.status===204?null:await response.json().catch(()=>null);
-  if(!response.ok){const e=new Error(data?.message||Object.values(data?.errors||{}).flat().join(' ')||`Operação não concluída (${response.status}).`);e.status=response.status;if(response.status===401){state.user=null;modal.close();renderLogin();}throw e;}
+  if(revision!==sessionRevision)throw Object.assign(new Error('Esta sessão foi encerrada.'),{stale:true});
+  if(!response.ok){const e=new Error(data?.message||Object.values(data?.errors||{}).flat().join(' ')||`Operação não concluída (${response.status}).`);e.status=response.status;if(response.status===401){clearSession();}throw e;}
   return data;
  }catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw new Error('Sem confirmação do servidor. Verifique a conexão antes de tentar novamente.');throw e;}finally{clearTimeout(timer);}
 }
@@ -68,12 +77,12 @@ function form(fields,save,label='Salvar') {
  const submit=el('button',{type:'submit','aria-label':label},label);const f=el('form',{},fields,el('div',{class:'toolbar'},submit,button('Cancelar',()=>modal.close(),'secondary')));
  f.addEventListener('submit',async e=>{e.preventDefault();if(submit.disabled)return;submit.disabled=true;try{await save(Object.fromEntries(new FormData(f)));modal.close();await refresh();notify('Operação concluída.');}catch(err){notify(err.message);}finally{submit.disabled=false;}});return f;
 }
-function renderLogin(){applyTheme();app.replaceChildren(el('main',{class:'login',id:'main'},el('section',{class:'login-intro'},brandLockup('',true),el('h1',{},'Tudo em ordem.\nDo estoque ao orçamento.'),el('p',{},'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')),el('section',{class:'login-form'},el('span',{class:'eyebrow'},'BEM-VINDO À EQUIPE'),el('h2',{},'Acesse sua conta'),el('p',{class:'muted'},'Entre com o acesso fornecido pelo administrador.'),(()=>{const f=el('form',{},field('E-mail','login','','email',{autocomplete:'username'}),field('Senha','password','','password',{autocomplete:'current-password'}),el('button',{type:'submit','aria-label':'Entrar'},'Entrar'));f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;try{const r=await api('usuarios/login',{method:'POST',body:Object.fromEntries(new FormData(f))});state.user=r.usuario;applyTheme();await refresh();}catch(err){notify(err.message);}finally{b.disabled=false;}};return f;})())));}
+function renderLogin(){applyTheme();app.replaceChildren(el('main',{class:'login',id:'main'},el('section',{class:'login-intro'},brandLockup('',true),el('h1',{},'Tudo em ordem.\nDo estoque ao orçamento.'),el('p',{},'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')),el('section',{class:'login-form'},el('span',{class:'eyebrow'},'BEM-VINDO À EQUIPE'),el('h2',{},'Acesse sua conta'),el('p',{class:'muted'},'Entre com o acesso fornecido pelo administrador.'),(()=>{const f=el('form',{},field('E-mail','login','','email',{autocomplete:'username'}),field('Senha','password','','password',{autocomplete:'current-password'}),el('button',{type:'submit','aria-label':'Entrar'},'Entrar'));f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;try{const r=await api('usuarios/login',{method:'POST',body:Object.fromEntries(new FormData(f))});sessionRevision++;state.user=r.usuario;applyTheme();await refresh();}catch(err){notify(err.message);}finally{b.disabled=false;}};return f;})())));}
 let refreshing=false;
-async function refresh(){if(refreshing)return;refreshing=true;try{
+async function refresh(){if(refreshing)return;const revision=sessionRevision;refreshing=true;try{
  const names=['produtos','fornecedores','movimentacoes','orcamentos','relatos-inclusao',...(state.user?.role==='Admin'?['usuarios']:[])];
- const [user,...values]=await Promise.all([api('usuarios/me'),...names.map(n=>api(n))]);state.user=user;names.forEach((n,i)=>state[n]=values[i]);state.relatos=state['relatos-inclusao']||[];state.lastSync=new Date();render();
- }finally{refreshing=false;}}
+ const [user,...values]=await Promise.all([api('usuarios/me'),...names.map(n=>api(n))]);if(revision!==sessionRevision)return;state.user=user;names.forEach((n,i)=>state[n]=values[i]);state.relatos=state['relatos-inclusao']||[];state.lastSync=new Date();render();
+ }finally{if(revision===sessionRevision)refreshing=false;}}
 function dashboardCharts(){
  const palette=['#1e6b91','#2aa889','#e9a23b','#775da6','#d45b4c','#5f7890'];
  const categoryTotals={};for(const product of state.produtos){const name=formatCategory(product.categoria);categoryTotals[name]=(categoryTotals[name]||0)+Number(product.estoque||0);}
@@ -95,7 +104,7 @@ function render(){if(!state.user)return renderLogin();
  const profileButton=el('button',{type:'button',class:'user-summary profile-button','aria-label':'Abrir a seção Conta',onclick:()=>{state.page='Conta';render();mainFocus();}},el('span',{class:'user-avatar','aria-hidden':'true'},avatarOf(state.user.avatarId).symbol),el('span',{class:'profile-copy'},el('strong',{},state.user.name),el('span',{class:'muted'},state.user.role)));
  const toggleMenu=()=>{state.menuOpen=!state.menuOpen;document.querySelector('.sidebar')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-backdrop')?.classList.toggle('open',state.menuOpen);document.querySelector('.menu-button')?.setAttribute('aria-expanded',String(state.menuOpen));};
  const menuButton=el('button',{type:'button',class:'menu-button','aria-label':'Abrir menu principal','aria-controls':'main-menu','aria-expanded':'false',onclick:toggleMenu},icon('fa-bars'));
- const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},menuButton,el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',async()=>{try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}},'secondary')))));
+ const main=el('main',{class:'workspace',id:'main',tabindex:'-1'},el('header',{class:'topbar'},menuButton,el('div',{class:'page-title'},el('span',{class:'eyebrow'},'OPERAÇÃO DA PAPELARIA'),el('h1',{},state.page)),el('div',{class:'topbar-actions'},profileButton,el('div',{class:'toolbar'},el('small',{class:'muted'},state.lastSync?'Atualizado às '+state.lastSync.toLocaleTimeString('pt-BR'):''),button('Atualizar',()=>refresh().catch(e=>notify(e.message)),'secondary'),button('Sair',logout,'secondary')))));
  const sidebar=el('aside',{class:'sidebar','aria-label':'Menu do sistema'},brandLockup(),nav,el('footer',{},el('small',{},'Web + Mobile\nUma equipe, os mesmos dados.'),el('span',{class:'version'},'Versão 1.6.1')));
  const backdrop=el('button',{type:'button',class:'menu-backdrop','aria-label':'Fechar menu principal',onclick:closeMenu});
  app.replaceChildren(el('div',{class:'layout'},sidebar,backdrop,main));
@@ -125,7 +134,7 @@ function render(){if(!state.user)return renderLogin();
  }else if(state.page==='Inclusão'){supportPage(main);
  }else if(state.page==='Conta'){accountPage(main);}
  main.append(educationalBanner());
- if(!state.user.avatarSelecionado)setTimeout(()=>preferencesDialog(true),0);
+ if(!state.user.avatarSelecionado){const revision=sessionRevision;setTimeout(()=>{if(revision===sessionRevision&&state.user)preferencesDialog(true);},0);}
  }
 
 function accountPage(main){
@@ -135,7 +144,12 @@ function accountPage(main){
   el('section',{class:'card'},el('h2',{},'Uma ferramenta para toda a equipe'),el('p',{},'Atendimento respeitoso e igualdade de acesso fazem parte do TechPaper. O avatar é uma representação escolhida pelo usuário; o sistema não registra raça, religião ou outros dados sensíveis.'),el('p',{},'Use o contraste de tema, a navegação por teclado, leitores de tela e o VLibras conforme a sua necessidade.'),button('Abrir suporte e inclusão',()=>{state.page='Inclusão';render();},'secondary'))));
 }
 
-async function logout(){try{await api('usuarios/logout',{method:'POST'});state.user=null;applyTheme();renderLogin();}catch(e){notify(e.message);}}
+async function logout(){
+ const request=api('usuarios/logout',{method:'POST'});clearSession();
+ // Aguarda a resposta do cookie antes de permitir outro login neste navegador.
+ const submit=app.querySelector('button[type=submit]');if(submit)submit.disabled=true;
+ try{await request;}catch(e){if(!e.stale)notify(e.message);}finally{if(submit)submit.disabled=false;}
+}
 
 // O canal registra manifestações com rastreabilidade e acesso limitado. Usuários
 // comuns veem apenas os próprios registros; a API libera a visão geral ao Admin.
@@ -190,7 +204,7 @@ function movementForm(){const key='tp_pending_'+state.user.id;let pending;try{pe
  const fields=pending?[el('p',{class:'note'},`Operação aguardando confirmação: ${pending.tipo}, ${pending.quantidade} unidade(s), produto #${pending.produtoId}. A nova tentativa não duplica o registro.`)]:[
  select('Produto','produtoId',state.produtos.map(p=>[p.id,`${p.nome} — saldo ${p.estoque}`])),select('Tipo','tipo',[['Entrada','Entrada'],['Saida','Saída']]),field('Quantidade','quantidade',1,'number',{min:1,max:1000000,step:1}),field('Motivo','motivo','','text',{maxlength:100})];
  showDialog('Movimentação de estoque',form(fields,async d=>{const body=pending||{...d,produtoId:Number(d.produtoId),quantidade:Number(d.quantidade),chaveOperacao:uuid()};localStorage.setItem(key,JSON.stringify(body));pending=body;
- try{await api('movimentacoes',{method:'POST',body});localStorage.removeItem(key);}catch(e){if([400,403,404,409].includes(e.status)){localStorage.removeItem(key);pending=null;}movementForm();throw e;}
+ try{await api('movimentacoes',{method:'POST',body});localStorage.removeItem(key);}catch(e){if(e.stale||e.status===401)throw e;if([400,403,404,409].includes(e.status)){localStorage.removeItem(key);pending=null;}movementForm();throw e;}
  },pending?'Tentar confirmar novamente':'Confirmar movimentação'));}
 function quoteForm(o={}){let items=(o.itens||[]).map(i=>({produtoId:i.produtoId,quantidade:i.quantidade}));const list=el('div');
  const product=select('Produto','produto',state.produtos.map(p=>[p.id,`${p.nome} — ${brl(p.precoVenda)}`]));const qty=field('Quantidade do item','quantidade',1,'number',{min:1,max:1000000,step:1});
@@ -205,5 +219,5 @@ function reports(main){let rows=[];let headers=[];const area=el('div');const typ
  else{headers=['SKU','Produto','Categoria','Saldo','Custo unitário','Valor em estoque'];rows=state.produtos.filter(p=>t!=='critico'||p.estoque<20).map(p=>[p.sku,p.nome,formatCategory(p.categoria),p.estoque,brl(p.precoCusto),brl(p.estoque*p.precoCusto)]);}
  area.replaceChildren(table(headers,rows));}
  const csv=()=>{const safe=v=>{let t=String(v);if(/^[=+\-@\t\r]/.test(t))t="'"+t;return '"'+t.replaceAll('"','""')+'"';};const blob=new Blob(['\uFEFF'+[headers,...rows].map(r=>r.map(safe).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});const link=el('a',{download:'techpaper-relatorio.csv',href:URL.createObjectURL(blob)});link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);};
- main.append(el('p',{class:'muted'},'CSV compatível com Excel. Para PDF, use a opção de salvar na janela de impressão. O período usa datas em UTC e se aplica às movimentações.'),el('div',{class:'grid'},type,start,end),el('div',{class:'toolbar'},button('Aplicar filtros',draw),button('Exportar CSV',csv,'secondary'),button('Imprimir / salvar PDF',()=>window.print(),'secondary')),area);draw();}
-api('usuarios/me').then(u=>{state.user=u;return refresh();}).catch(e=>{renderLogin();if(e.status!==401)notify(e.message);});
+ main.append(el('p',{class:'muted'},'CSV compatível com Excel. Para PDF, use a opção de salvar na janela de impressão. O período usa datas de Brasília e se aplica às movimentações.'),el('div',{class:'grid'},type,start,end),el('div',{class:'toolbar'},button('Aplicar filtros',draw),button('Exportar CSV',csv,'secondary'),button('Imprimir / salvar PDF',()=>window.print(),'secondary')),area);draw();}
+api('usuarios/me').then(u=>{state.user=u;return refresh();}).catch(e=>{if(e.stale)return;renderLogin();if(e.status!==401)notify(e.message);});

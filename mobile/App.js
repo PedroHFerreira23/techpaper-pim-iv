@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import Svg, { Circle } from 'react-native-svg';
 import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
+import { createSessionScope } from './src/session.mjs';
 
 // O endereço pertence à configuração técnica do aplicativo e nunca é solicitado ao usuário.
 const API_URL = normalizeUrl(process.env.EXPO_PUBLIC_API_URL || 'https://techpaper-pim-iv.onrender.com', __DEV__);
@@ -94,6 +95,10 @@ function DashboardCharts({ produtos, movimentacoes }) {
 export default function App() { return <SafeAreaProvider><TechPaper /></SafeAreaProvider>; }
 function TechPaper() {
   const [login, setLogin] = useState(''); const [password, setPassword] = useState('');
+  const sessionScope = useRef(null);
+  if (!sessionScope.current) sessionScope.current = createSessionScope();
+  const scope = sessionScope.current;
+  const activeSession = useRef(null);
   const [session, setSession] = useState(null); const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false); const lock = useRef(false); const syncing = useRef(false);
   const [tab, setTab] = useState('Resumo'); const [notice, setNotice] = useState('');
@@ -110,23 +115,63 @@ function TechPaper() {
   const darkMode = !!session?.user?.temaEscuro;
   const theme = useMemo(() => createTheme(darkMode), [darkMode]); const s = theme.s;
   const themed = child => <ThemeContext.Provider value={theme}>{child}</ThemeContext.Provider>;
-  const api = current => createApi(API_URL, current.token);
+  const api = current => {
+    const request = createApi(API_URL, current.token);
+    return async (...args) => {
+      const ticket = scope.ticket();
+      const stale = () => Object.assign(new Error('Esta sessão foi encerrada.'), { stale: true });
+      if (activeSession.current?.token !== current.token) throw stale();
+      try {
+        const result = await request(...args);
+        if (!scope.current(ticket)) throw stale();
+        return result;
+      } catch (error) {
+        if (!scope.current(ticket)) throw stale();
+        throw error;
+      }
+    };
+  };
   const pendingKey = current => `tp_pending_${current.user.id}`;
   const cacheKey = current => `tp_cache_${current.user.id}`;
 
+  function resetLocalState() {
+    setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] });
+    setLastSync(null); setPending(null); setCart([]); setDetail(null); setCliente('');
+    setSelected(null); setSearch(''); setTipo('Entrada'); setQuantidade('1'); setMotivo('');
+    setValidade(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+    setRelatoCategoria('Discriminacao'); setRelatoDescricao(''); setTab('Resumo'); setNotice('');
+    setBannerIndex(0); syncing.current = false; setRefreshing(false);
+  }
+  function activate(current) {
+    const ticket = scope.begin(); resetLocalState();
+    activeSession.current = current; setSession(current); return ticket;
+  }
+  async function closeLocalSession(current, message = '') {
+    scope.begin(); activeSession.current = null; setSession(null); resetLocalState(); setPassword('');
+    setNotice(message);
+    await scope.cleanup(async () => {
+      try { if (current) await AsyncStorage.removeItem(cacheKey(current)); }
+      finally { await SecureStore.deleteItemAsync('tp_session'); }
+    });
+  }
   useEffect(() => {
     (async () => {
+      let restored;
       try {
         const saved = await SecureStore.getItemAsync('tp_session');
         if (saved) {
-          const current = JSON.parse(saved);
-          if (current.expiresAt && new Date(current.expiresAt) <= new Date()) throw Object.assign(new Error('Sua sessão expirou. Entre novamente.'), { status: 401 });
-          setSession(current); await restorePending(current);
-          const cached = await AsyncStorage.getItem(cacheKey(current));
-          if (cached) { const parsed = JSON.parse(cached); setData(parsed.data); setLastSync(new Date(parsed.savedAt)); setNotice('Exibindo os últimos dados salvos enquanto o servidor é consultado.'); }
-          await sync(current);
+          restored = JSON.parse(saved);
+          if (restored.expiresAt && new Date(restored.expiresAt) <= new Date()) throw Object.assign(new Error('Sua sessão expirou. Entre novamente.'), { status: 401 });
+          const ticket = activate(restored); await restorePending(restored, ticket);
+          const cached = await AsyncStorage.getItem(cacheKey(restored));
+          if (!scope.current(ticket)) return;
+          if (cached) { const parsed = JSON.parse(cached); setData({ ...parsed.data, relatos: [] }); setLastSync(new Date(parsed.savedAt)); setNotice('Exibindo os últimos dados salvos enquanto o servidor é consultado.'); }
+          await sync(restored, ticket);
         }
-      } catch (e) { if(e.status===401)await SecureStore.deleteItemAsync('tp_session');setNotice(e.message); } finally { setLoading(false); }
+      } catch (e) {
+        if (e.status === 401) await closeLocalSession(restored, e.message);
+        else setNotice(e.message);
+      } finally { setLoading(false); }
     })();
   }, []);
   useEffect(() => {
@@ -143,23 +188,33 @@ function TechPaper() {
     const timer = setInterval(() => setBannerIndex(index => (index + 1) % educationalMessages.length), 8000);
     return () => clearInterval(timer);
   }, []);
-  async function restorePending(current) {
-    const value = await SecureStore.getItemAsync(pendingKey(current)); setPending(value ? JSON.parse(value) : null);
+  async function restorePending(current, ticket = scope.ticket()) {
+    const value = await SecureStore.getItemAsync(pendingKey(current));
+    if (scope.current(ticket)) setPending(value ? JSON.parse(value) : null);
   }
-  async function fail(e) {
-    setNotice(e.message);
-    if (e.status === 401) { if(session)await AsyncStorage.removeItem(cacheKey(session));await SecureStore.deleteItemAsync('tp_session'); setSession(null); setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] }); setLastSync(null); }
+  async function fail(e, current = activeSession.current, ticket = scope.ticket()) {
+    if (e.stale || !scope.current(ticket)) return;
+    if (e.status === 401) await closeLocalSession(current, e.message);
+    else setNotice(e.message);
   }
-  async function sync(current = session) {
-    if (!current || syncing.current) return;
+  async function sync(current = activeSession.current, ticket = scope.ticket()) {
+    if (!current || activeSession.current?.token !== current.token || syncing.current || !scope.current(ticket)) return;
     syncing.current = true; setRefreshing(true);
     try {
       const request = api(current);
       const [produtos, movimentacoes, orcamentos, relatos, user] = await Promise.all([request('produtos'), request('movimentacoes'), request('orcamentos'), request('relatos-inclusao'), request('usuarios/me')]);
-      const updated = { ...current, user, expiresAt: current.expiresAt || new Date(Date.now()+8*60*60*1000).toISOString() }; setSession(updated); await SecureStore.setItemAsync('tp_session', JSON.stringify(updated));
-      const nextData={ produtos, movimentacoes, orcamentos, relatos };const savedAt=new Date();
-      setData(nextData);setLastSync(savedAt);await AsyncStorage.setItem(cacheKey(updated),JSON.stringify({savedAt:savedAt.toISOString(),data:{produtos,movimentacoes,orcamentos,relatos:[]}}));setNotice('');
-    } catch (e) { await fail(e); } finally { syncing.current = false; setRefreshing(false); }
+      if (!scope.current(ticket)) return;
+      const updated = { ...current, user, expiresAt: current.expiresAt || new Date(Date.now()+8*60*60*1000).toISOString() };
+      const savedAt = new Date();
+      await scope.write(ticket, async () => {
+        await SecureStore.setItemAsync('tp_session', JSON.stringify(updated));
+        await AsyncStorage.setItem(cacheKey(updated), JSON.stringify({ savedAt: savedAt.toISOString(), data: { produtos, movimentacoes, orcamentos, relatos: [] } }));
+      });
+      if (!scope.current(ticket)) return;
+      activeSession.current = updated; setSession(updated);
+      setData({ produtos, movimentacoes, orcamentos, relatos }); setLastSync(savedAt); setNotice('');
+    } catch (e) { await fail(e, current, ticket); }
+    finally { if (scope.current(ticket)) { syncing.current = false; setRefreshing(false); } }
   }
   async function run(action) {
     if (lock.current) return; lock.current = true; setBusy(true); setNotice('');
@@ -169,29 +224,41 @@ function TechPaper() {
     await run(async () => {
       const response = await createApi(API_URL)('usuarios/login', { method: 'POST', body: { login: login.trim(), password } });
       const current = { token: response.accessToken, user: response.usuario, expiresAt: response.expiraEm };
-      await SecureStore.setItemAsync('tp_session', JSON.stringify(current));
-      setSession(current); setPassword(''); await restorePending(current); await sync(current);
+      const ticket = activate(current); setPassword('');
+      await scope.write(ticket, () => SecureStore.setItemAsync('tp_session', JSON.stringify(current)));
+      await restorePending(current, ticket); await sync(current, ticket);
     });
   }
   async function logout() {
     await run(async () => {
-      try { await api(session)('usuarios/logout', { method: 'POST' }); } catch(error) { if(error.status!==0)throw error; }
-      await AsyncStorage.removeItem(cacheKey(session));await SecureStore.deleteItemAsync('tp_session'); setSession(null); setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] });
-      setLastSync(null); setPending(null); setCart([]); setDetail(null); setCliente(''); setSelected(null); setTab('Resumo');
+      const current = activeSession.current;
+      if (!current) return;
+      // Invalida a sincronização em voo antes de aguardar a revogação remota.
+      const revoke = createApi(API_URL, current.token);
+      await closeLocalSession(current);
+      try { await revoke('usuarios/logout', { method: 'POST' }); }
+      catch (error) { if (error.status !== 0 && error.status !== 401) setNotice(error.message); }
     });
   }
   // A preferência é gravada na API e acompanha o usuário em qualquer aparelho.
   async function updatePreferences(next) {
     await run(async () => {
-      const user = await api(session)('usuarios/me/preferencias', { method: 'PATCH', body: { temaEscuro: next.temaEscuro, avatarId: next.avatarId } });
-      const current = { ...session, user }; setSession(current); await SecureStore.setItemAsync('tp_session', JSON.stringify(current));
+      const ticket = scope.ticket(); const previous = activeSession.current;
+      const user = await api(previous)('usuarios/me/preferencias', { method: 'PATCH', body: { temaEscuro: next.temaEscuro, avatarId: next.avatarId } });
+      if (!scope.current(ticket)) return;
+      const current = { ...previous, user };
+      await scope.write(ticket, () => SecureStore.setItemAsync('tp_session', JSON.stringify(current)));
+      if (scope.current(ticket)) { activeSession.current = current; setSession(current); }
     });
   }
   async function move() {
     await run(async () => {
       if (!pending && (!selected || !motivo.trim())) throw new Error('Selecione um produto e informe o motivo.');
       const body = pending || { produtoId: selected, tipo, quantidade: positiveInteger(quantidade), motivo: motivo.trim(), chaveOperacao: Crypto.randomUUID() };
-      await SecureStore.setItemAsync(pendingKey(session), JSON.stringify(body)); setPending(body);
+      const ticket = scope.ticket();
+      await scope.write(ticket, () => SecureStore.setItemAsync(pendingKey(session), JSON.stringify(body)));
+      if (!scope.current(ticket)) return;
+      setPending(body);
       try { await api(session)('movimentacoes', { method: 'POST', body }); }
       catch (e) {
         if ([400, 403, 404, 409].includes(e.status)) { await SecureStore.deleteItemAsync(pendingKey(session)); setPending(null); }
@@ -237,7 +304,9 @@ function TechPaper() {
     <View style={s.brandRow}><Image source={require('./assets/techpaper-symbol-v5.png')} style={s.logoSmall} accessibilityLabel="Símbolo TechPaper" /><Text style={s.brand}>TechPaper</Text></View>
     <Card><Text accessibilityRole="header" style={s.title}>Escolha como aparecer</Text><Text style={s.muted}>Para continuar, selecione um avatar que represente você. A escolha pode ser alterada depois na tela Conta.</Text>
       <View accessibilityRole="radiogroup" accessibilityLabel="Escolha obrigatória de avatar" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: false, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={s.avatarChoice}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View>
+      {notice ? <Text accessibilityRole="alert" style={s.notice}>{notice}</Text> : null}
       {busy ? <ActivityIndicator accessibilityLabel="Salvando avatar" color={theme.colors.primary} /> : null}
+      <Button title="Sair da conta" secondary disabled={busy} onPress={logout} />
       <Text style={s.muted}>O sistema armazena somente o número do avatar. Raça e etnia não são coletadas.</Text>
     </Card><EducationalBanner message={educationalMessages[bannerIndex]} />
   </ScrollView></SafeAreaView>);

@@ -12,7 +12,7 @@ Continuação programável do TechPaper apresentado no PIM III. O pacote reúne 
 - Orçamentos com itens, preços e totais calculados no servidor, estados e controle de alterações simultâneas.
 - Portal web responsivo com menu hambúrguer em telas pequenas, gráficos de estoque e movimentações, painel de indicadores, VLibras, relatórios CSV e impressão/PDF.
 - Aplicativo Expo/React Native em JavaScript com os mesmos gráficos do portal, login, produtos, estoque, orçamentos, sincronização e sessão no armazenamento seguro do aparelho.
-- Tema claro/escuro, escolha obrigatória de avatar representativo e banners educativos rotativos sincronizados entre portal e aplicativo.
+- Tema claro/escuro, escolha obrigatória de avatar representativo e banners educativos rotativos em ambas as interfaces.
 - Canal reservado de inclusão para registrar discriminação, barreiras de acessibilidade e sugestões, com acompanhamento pelo autor e tratamento administrativo.
 - Consulta móvel dos últimos dados operacionais sincronizados durante oscilações de conexão; relatos reservados não entram nesse cache.
 - Atualização por gesto no mobile, rótulos de acessibilidade, navegação por teclado e integração com VLibras.
@@ -33,11 +33,11 @@ Continuação programável do TechPaper apresentado no PIM III. O pacote reúne 
 
 ## Preparação com containers
 
-1. Copie `.env.example` para `.env`.
+1. Crie `.env` com `POSTGRES_PASSWORD`, `BOOTSTRAP_LOGIN` e `BOOTSTRAP_PASSWORD`. Use senhas locais próprias, fora do repositório.
 2. Substitua todos os valores de senha do novo `.env`. Esse arquivo não deve ser enviado ao repositório.
 3. Na pasta deste projeto, execute `docker compose up --build`.
 4. Abra `http://localhost:8080` no computador.
-5. No Expo em desenvolvimento, informe `http://IP-DO-COMPUTADOR:8080` na tela de acesso. O celular e o computador precisam estar na mesma rede. Em implantação, use sempre HTTPS.
+5. No Expo em desenvolvimento, configure `EXPO_PUBLIC_API_URL=http://IP-DO-COMPUTADOR:8080` antes de iniciar o Expo. A tela de acesso solicita somente e-mail e senha. O celular e o computador precisam estar na mesma rede. Em implantação, use sempre HTTPS.
 
 A API executa os scripts idempotentes quando `DatabaseInit__Enabled=true`. Alterações destrutivas futuras devem usar uma migração versionada e backup; não modifique um banco com dados reais sem ensaio de restauração.
 
@@ -70,13 +70,23 @@ O bootstrap cria o primeiro administrador apenas quando `usuarios` está vazia. 
 - Onze testes de integração preparados para banco descartável, incluindo preferências visuais, autorização, sigilo de senha, saldo insuficiente, concorrência, repetição segura, cálculo de orçamento, controle de versão, revogação da sessão e privacidade do canal de inclusão.
 - Seis testes da comunicação mobile aprovados.
 - Dependências verificadas pelo Expo: atualizadas para o SDK 57.
-- PostgreSQL descartável criado e conferido com oito tabelas, cinco funções, quatro triggers e índices.
+- PostgreSQL descartável criado e conferido com nove tabelas, cinco funções, quatro triggers e índices.
 - Portal verificado no navegador: login, painel, gráficos, VLibras e movimentação com data e hora de Brasília.
 - Responsividade conferida em largura de 390 px: menu recolhível, conteúdo sem rolagem horizontal e gráficos empilhados.
 - Aplicativo exportado pelo Expo para Android com gráficos em SVG, atualização por gesto, ícone e tela de abertura.
 
-A versão móvel 1.6.0 usa o endereço da API como configuração interna: a tela de acesso solicita somente e-mail e senha. A versão acrescenta o canal reservado e a consulta dos últimos dados sincronizados quando a conexão oscila.
+A versão móvel 1.6.1 usa o endereço da API como configuração interna: a tela de acesso solicita somente e-mail e senha. A versão acrescenta o canal reservado e a consulta dos últimos dados sincronizados quando a conexão oscila.
 
 ## Uso acadêmico
 
 O código é a implementação. O relatório deve descrever decisões, resultados realmente observados, telas capturadas pela equipe, testes executados no ambiente final e fontes consultadas. A matriz em `docs/MATRIZ_MANUAL_PIM_IV.md` indica as evidências ainda necessárias para cada item do manual.
+
+## Correções de sessão e verificação
+
+A troca de conta limpa dados e formulários locais. Respostas antigas de sincronização são descartadas, e a persistência mobile é serializada com a limpeza da sessão. Movimentações pendentes permanecem protegidas por usuário para permitir confirmação posterior sem duplicidade. O onboarding mobile mostra falhas de gravação do avatar e oferece saída; erros de formulários web aparecem dentro do diálogo.
+
+Execute `node --test tests/web_session.test.mjs` para as regressões web e `pnpm test` em `mobile/` para comunicação e ciclo de sessão. O resultado do CI da versão em uso deve ser consultado; relatos anteriores de validação não substituem uma nova execução.
+
+## Integração PostgreSQL no CI
+
+O job `api-e-banco` inicia PostgreSQL 17 e a API em ambiente descartável, executa os 11 testes de integração e verifica gatilhos, auditoria, imutabilidade e consistência por SQL. As credenciais do workflow são exclusivas desse banco temporário. A execução [39092182239](https://github.com/PedroHFerreira23/techpaper-pim-iv/actions/runs/39092182239) aprovou integração, testes dos clientes e exportação Android. Isso não substitui validação de aparelho físico ou confirmação da versão publicada.
