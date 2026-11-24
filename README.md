@@ -2,6 +2,8 @@
 
 Continuação programável do TechPaper apresentado no PIM III. O pacote reúne portal web, API compartilhada, aplicativo móvel em JavaScript e banco PostgreSQL. Web e mobile usam os mesmos produtos, movimentações e orçamentos.
 
+Para ensaiar com dados fictícios, veja **[APRESENTACAO.md](APRESENTACAO.md)**.
+
 ## O que está implementado
 
 - Autenticação com senha armazenada em hash e sessão revogável.

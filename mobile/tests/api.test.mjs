@@ -7,3 +7,12 @@ test('carrinho agrupa produtos e preserva o anterior',()=>{const before=[{produt
 test('requisição envia token e mantém identificação da operação',async()=>{let sent;const body={chaveOperacao:'abc',quantidade:2};const api=createApi('https://example.com','secret',async(url,options)=>{sent={url,options};return {ok:true,status:200,json:async()=>({id:3})};});assert.deepEqual(await api('movimentacoes',{method:'POST',body}),{id:3});assert.equal(sent.options.headers.Authorization,'Bearer secret');assert.equal(sent.options.headers['X-TechPaper-Client'],'mobile');assert.deepEqual(JSON.parse(sent.options.body),body);});
 test('erro 401 preserva status para expiração de sessão',async()=>{const api=createApi('https://example.com','token',async()=>({ok:false,status:401,json:async()=>({message:'Sessão expirada'})}));await assert.rejects(api('produtos'),e=>e instanceof ApiError&&e.status===401);});
 test('falha de rede nunca é interpretada como gravação confirmada',async()=>{const api=createApi('https://example.com','token',async()=>{throw new TypeError('network');});await assert.rejects(api('movimentacoes',{method:'POST',body:{}}),e=>e.status===0&&e.message.includes('Sem confirmação'));});
+
+test('validade usa o dia civil de São Paulo na virada UTC',async()=>{
+ const {validadePadrao}=await import('../src/api.mjs');
+ assert.equal(validadePadrao(Date.parse('2026-11-24T01:00:00Z')),'2026-11-30');
+});
+test('limite de 100 produtos distintos preserva o carrinho existente',()=>{
+ const items=Array.from({length:100},(_,i)=>({produtoId:i+1,quantidade:1}));
+ assert.throws(()=>addItem(items,101,1)); assert.equal(addItem(items,1,1)[0].quantidade,2);
+});

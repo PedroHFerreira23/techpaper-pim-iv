@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { addItem, createApi, normalizeUrl, positiveInteger } from '../src/api.mjs';
+import { addItem, createApi, normalizeUrl, positiveInteger, validadePadrao } from '../src/api.mjs';
 import { createSessionScope } from '../src/session.mjs';
 const require=createRequire(import.meta.url),expoRequire=createRequire(require.resolve('expo'));
 const source=readFileSync(new URL('../App.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'').replace('export default function App()', 'function App()').replace('  const filtered = data.produtos.filter', '  globalThis.appTest = { enter, logout, sync, updatePreferences, setLogin, setPassword, setRelatoDescricao, setCliente, setCart, setDetail, state: {session, data, relatoDescricao, cliente, cart, detail, loading, notice} };\n  const filtered = data.produtos.filter');
@@ -12,7 +12,7 @@ function harness(fetcher, initial={}) {
  let cursor=0,first=true;const slots=[],effects=[],secure=new Map(initial.secure||[]),cache=new Map(initial.cache||[]);
  const storage=map=>({getItemAsync:async key=>map.get(key)??null,setItemAsync:async(key,value)=>{map.set(key,value);},deleteItemAsync:async key=>{map.delete(key);},getItem:async key=>map.get(key)??null,setItem:async(key,value)=>{map.set(key,value);},removeItem:async key=>{map.delete(key);}});
  const context=vm.createContext({console,URL,AbortController,process:{env:{}},__DEV__:true,
- createSessionScope,addItem,createApi:(base,token)=>createApi(base,token,fetcher),normalizeUrl,positiveInteger,
+ createSessionScope,addItem,createApi:(base,token)=>createApi(base,token,fetcher),normalizeUrl,positiveInteger,validadePadrao,
  useState(initial){const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];},
  useRef(initial){const index=cursor++;if(!(index in slots))slots[index]={current:initial};return slots[index];},
  useEffect(callback){if(first)effects.push(callback);},useMemo:callback=>callback(),createContext:()=>({Provider:'provider'}),useContext:()=>null,

@@ -21,7 +21,7 @@ public class OrcamentosController(AppDbContext db,OrcamentoService service):Cont
  [HttpPatch("{id:int}/status"),Authorize(Roles="Admin,Supervisor")] public async Task<IActionResult> Status(int id,StatusRequest r){
   var o=await db.Orcamentos.FindAsync(id);if(o is null)return NotFound();
   if(o.Status!="Rascunho"||o.Versao!=r.Versao)return Conflict(new{message="Somente rascunhos atuais podem mudar de status."});
-  if(r.Status=="Aprovado"&&o.Validade.Date<DateTime.UtcNow.Date)return Conflict(new{message="Orçamento vencido. Revise a validade."});
+  if(r.Status=="Aprovado"&&o.Validade.Date<OrcamentoService.HojeNoBrasil())return Conflict(new{message="Orçamento vencido. Revise a validade."});
   o.Status=r.Status;o.Versao++;await db.SaveChangesAsync();return Ok(o);
  }
 }

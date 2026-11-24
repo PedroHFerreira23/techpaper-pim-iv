@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import Svg, { Circle } from 'react-native-svg';
-import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
+import { addItem, createApi, normalizeUrl, positiveInteger, validadePadrao } from './src/api.mjs';
 import { createSessionScope } from './src/session.mjs';
 
 // O endereço pertence à configuração técnica do aplicativo e nunca é solicitado ao usuário.
@@ -107,7 +107,7 @@ function TechPaper() {
   const [search, setSearch] = useState(''); const [selected, setSelected] = useState(null);
   const [tipo, setTipo] = useState('Entrada'); const [quantidade, setQuantidade] = useState('1'); const [motivo, setMotivo] = useState('');
   const [pending, setPending] = useState(null);
-  const [cliente, setCliente] = useState(''); const [validade, setValidade] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+  const [cliente, setCliente] = useState(''); const [validade, setValidade] = useState(validadePadrao());
   const [cart, setCart] = useState([]); const [detail, setDetail] = useState(null);
   const [bannerIndex, setBannerIndex] = useState(0);
   const [relatoCategoria, setRelatoCategoria] = useState('Discriminacao');
@@ -138,7 +138,7 @@ function TechPaper() {
     setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] });
     setLastSync(null); setPending(null); setCart([]); setDetail(null); setCliente('');
     setSelected(null); setSearch(''); setTipo('Entrada'); setQuantidade('1'); setMotivo('');
-    setValidade(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+    setValidade(validadePadrao());
     setRelatoCategoria('Discriminacao'); setRelatoDescricao(''); setTab('Resumo'); setNotice('');
     setBannerIndex(0); syncing.current = false; setRefreshing(false);
   }

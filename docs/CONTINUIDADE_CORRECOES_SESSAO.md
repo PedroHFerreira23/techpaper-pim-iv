@@ -40,3 +40,7 @@ A execução https://github.com/PedroHFerreira23/techpaper-pim-iv/actions/runs/3
 O workflow mantém essa integração nas próximas alterações. Nenhum dado de produção foi usado. Não surgiu falha de regra de negócio nesta suíte que exigisse alterar controllers, services ou schema.
 
 Publicação e dispositivo continuam separados da aprovação automatizada. O PR #3 permanece aberto: a revisão automática de aprovação bloqueou o merge por ausência de autorização explícita para integrar à main. O endpoint público /health/ready respondeu ready na consulta de leitura, mas isso não comprova publicação da branch. EAS CLI e navegador não tinham sessão Expo autenticada; nenhum aparelho físico/adb foi disponibilizado. Não declarar APK atualizado ou teste físico realizado sem essas etapas.
+
+## Revisão para apresentação — 23/11/2026
+
+Correções no foco e menu móvel, validação/concorrência do orçamento, validade em Brasília e ícones locais. Compilação Release, 11 testes de integração com PostgreSQL 17, checagens SQL, 20 testes JavaScript, exportação Android e 40 combinações tela/largura no Chromium. Ensaio com cliente JS móvel, portal e banco confirmou 7 + 5 = 12 sem repetir a entrada. A base fictícia é reproduzível; consulte [APRESENTACAO.md](../APRESENTACAO.md). Sem certificação de acessibilidade, teste físico ou publicação desta revisão.
