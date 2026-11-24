@@ -44,3 +44,6 @@ Publicação e dispositivo continuam separados da aprovação automatizada. O PR
 ## Revisão para apresentação — 23/11/2026
 
 Correções no foco e menu móvel, validação/concorrência do orçamento, validade em Brasília e ícones locais. Compilação Release, 11 testes de integração com PostgreSQL 17, checagens SQL, 20 testes JavaScript, exportação Android e 40 combinações tela/largura no Chromium. Ensaio com cliente JS móvel, portal e banco confirmou 7 + 5 = 12 sem repetir a entrada. A base fictícia é reproduzível; consulte [APRESENTACAO.md](../APRESENTACAO.md). Sem certificação de acessibilidade, teste físico ou publicação desta revisão.
+
+## Apresentação integrada — versão móvel 1.7.0
+O celular passou a consultar fornecedores e histórico completo, administrar cadastros conforme o perfil, editar rascunhos, atualizar relatos como Admin e emitir CSV/impressão pelo Android. Atualizar no portal ou no app consulta a mesma API. O menu do celular permite rolar horizontalmente. A API pode criar o lote fictício quando Presentation__SeedOnStart=true: a conta de autoria do lote é desativada dentro da mesma transação; não permite login. A carga não remove cadastros nem redefine o saldo de um ensaio anterior. Em colisão, a operação reverte sem mesclar registros alheios. A versão oficial com assinatura anterior é gerada pelo perfil Expo preview do projeto já existente.

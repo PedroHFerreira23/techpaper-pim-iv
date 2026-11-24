@@ -17,6 +17,19 @@ public static class DatabaseInitializer {
    try {await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_unlock(84723104)");} finally {await db.Database.CloseConnectionAsync();}
   }
  }
+ // Lote opcional e isolado. Em colisão, a transação reverte sem impedir a inicialização.
+ public static async Task Apresentacao(WebApplication app) {
+  if(!app.Configuration.GetValue<bool>("Presentation:SeedOnStart"))return;
+  using var scope=app.Services.CreateScope();
+  var db=scope.ServiceProvider.GetRequiredService<AppDbContext>();
+  try {
+   await Execute(db,"005_apresentacao.sql");
+   var qtd=await db.Produtos.CountAsync(p=>p.Sku.StartsWith("PIM-DEMO-"));
+   var movimentos=await db.Movimentacoes.CountAsync(m=>m.UsuarioId=="lote-banca-v1@example.invalid");
+   var orcamentos=await db.Orcamentos.CountAsync(o=>o.UsuarioId==db.Usuarios.Where(u=>u.Login=="lote-banca-v1@example.invalid").Select(u=>u.Id).First());
+   app.Logger.LogInformation("Lote PIM conferido: {Produtos} produtos, {Movimentos} movimentos e {Orcamentos} orçamentos.",qtd,movimentos,orcamentos);
+  } catch(Npgsql.PostgresException e) {app.Logger.LogWarning("Lote PIM não aplicado. Código PostgreSQL: {Codigo}. Os dados anteriores foram preservados.",e.SqlState);}
+ }
  private static async Task Execute(AppDbContext db,string file) {
   var assembly=Assembly.GetExecutingAssembly();
   var resource=assembly.GetManifestResourceNames().Single(x=>x.EndsWith(file,StringComparison.Ordinal));

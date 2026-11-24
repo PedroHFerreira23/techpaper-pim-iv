@@ -62,6 +62,7 @@ if(builder.Configuration.GetValue<bool>("Bootstrap:Enabled")) {
   var u=new Usuario{Name="Administrador",Login=login.Trim().ToLowerInvariant(),Role="Admin"};u.Password=scope.ServiceProvider.GetRequiredService<IPasswordHasher<Usuario>>().HashPassword(u,password);db.Usuarios.Add(u);await db.SaveChangesAsync();
  }
 }
+await DatabaseInitializer.Apresentacao(app);
 app.Run();
 
 static string NormalizePostgresUrl(string value) {

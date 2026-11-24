@@ -1,6 +1,6 @@
 {
   "name": "techpaper-mobile",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,10 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.30",
     "expo-crypto": "~57.0.4",
+    "expo-file-system": "~57.0.7",
+    "expo-print": "~57.0.2",
     "expo-secure-store": "~57.0.4",
+    "expo-sharing": "~57.0.26",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",

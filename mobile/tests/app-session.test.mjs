@@ -49,3 +49,8 @@ test('onboarding renderiza erro de avatar e oferece saída',async()=>{
  assert.ok(find(h.tree(),node=>node.props?.accessibilityRole==='alert'&&node.children.includes('Falha ao salvar avatar')));
  assert.ok(find(h.tree(),node=>node.props?.title==='Sair da conta'));await h.render().logout();assert.equal(h.render().state.session,null);
 });
+test('operador sincroniza fornecedores sem consultar usuários e não guarda lista administrativa',async()=>{
+ const urls=[];const operator={...user,role:'Operador'};
+ const h=harness(async url=>{urls.push(url);return response(200,url.endsWith('/login')?{usuario:operator,accessToken:'token-A'}:url.endsWith('/me')?operator:url.endsWith('/fornecedores')?[{id:2,nomeFantasia:'Loja'}]:[]);});
+ await h.render().enter();assert.ok(urls.some(u=>u.endsWith('/fornecedores')));assert.ok(!urls.some(u=>u.endsWith('/usuarios')));assert.equal(h.render().state.data.fornecedores.length,1);assert.ok(!JSON.parse(h.cache.get('tp_cache_1')).data.usuarios);
+});
