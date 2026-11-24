@@ -5,5 +5,6 @@
     <EmbeddedResource Include="..\database\001_schema.sql" Link="DatabaseScripts\001_schema.sql" />
     <EmbeddedResource Include="..\database\002_routines.sql" Link="DatabaseScripts\002_routines.sql" />
     <EmbeddedResource Include="..\database\003_demo.sql" Link="DatabaseScripts\003_demo.sql" />
+    <EmbeddedResource Include="..\database\005_apresentacao.sql" Link="DatabaseScripts\005_apresentacao.sql" />
   </ItemGroup>
 </Project>

@@ -35,6 +35,11 @@ export function positiveInteger(text) {
 export function addItem(items, produtoId, quantidade) {
   positiveInteger(quantidade);
   const existing = items.find(i => i.produtoId === produtoId);
+  if (!existing && items.length >= 100) throw new Error('O orçamento permite até 100 produtos diferentes.');
   if (!existing) return [...items, { produtoId, quantidade }];
   return items.map(i => i.produtoId === produtoId ? { ...i, quantidade: positiveInteger(i.quantidade + quantidade) } : i);
+}
+
+export function validadePadrao(now = Date.now()) {
+  return new Intl.DateTimeFormat('en-CA', {timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date(now+7*86400000));
 }

@@ -4,8 +4,10 @@ using TechPaperAPI.Data;
 using TechPaperAPI.Models;
 namespace TechPaperAPI.Services;
 public class OrcamentoService(AppDbContext db) {
+ public static DateTime HojeNoBrasil() => TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "America/Sao_Paulo").Date;
  public async Task Preencher(Orcamento o,OrcamentoRequest r) {
-  if(r.Validade.Date<DateTime.UtcNow.Date||r.Validade.Date>DateTime.UtcNow.Date.AddYears(1))throw new ArgumentException("Validade deve estar entre hoje e um ano.");
+  var hoje=HojeNoBrasil();
+  if(r.Validade.Date<hoje||r.Validade.Date>hoje.AddYears(1))throw new ArgumentException("Validade deve estar entre hoje e um ano.");
   if(r.Itens.Select(x=>x.ProdutoId).Distinct().Count()!=r.Itens.Count)throw new ArgumentException("Agrupe os itens do mesmo produto.");
   var ids=r.Itens.Select(x=>x.ProdutoId).ToList();var produtos=await db.Produtos.Where(x=>ids.Contains(x.Id)).ToDictionaryAsync(x=>x.Id);
   if(produtos.Count!=ids.Count)throw new ArgumentException("Um produto não existe mais. Atualize a lista.");

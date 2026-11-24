@@ -40,3 +40,10 @@ A execução https://github.com/PedroHFerreira23/techpaper-pim-iv/actions/runs/3
 O workflow mantém essa integração nas próximas alterações. Nenhum dado de produção foi usado. Não surgiu falha de regra de negócio nesta suíte que exigisse alterar controllers, services ou schema.
 
 Publicação e dispositivo continuam separados da aprovação automatizada. O PR #3 permanece aberto: a revisão automática de aprovação bloqueou o merge por ausência de autorização explícita para integrar à main. O endpoint público /health/ready respondeu ready na consulta de leitura, mas isso não comprova publicação da branch. EAS CLI e navegador não tinham sessão Expo autenticada; nenhum aparelho físico/adb foi disponibilizado. Não declarar APK atualizado ou teste físico realizado sem essas etapas.
+
+## Revisão para apresentação — 23/11/2026
+
+Correções no foco e menu móvel, validação/concorrência do orçamento, validade em Brasília e ícones locais. Compilação Release, 11 testes de integração com PostgreSQL 17, checagens SQL, 20 testes JavaScript, exportação Android e 40 combinações tela/largura no Chromium. Ensaio com cliente JS móvel, portal e banco confirmou 7 + 5 = 12 sem repetir a entrada. A base fictícia é reproduzível; consulte [APRESENTACAO.md](../APRESENTACAO.md). Sem certificação de acessibilidade, teste físico ou publicação desta revisão.
+
+## Apresentação integrada — versão móvel 1.7.0
+O celular passou a consultar fornecedores e histórico completo, administrar cadastros conforme o perfil, editar rascunhos, atualizar relatos como Admin e emitir CSV/impressão pelo Android. Atualizar no portal ou no app consulta a mesma API. O menu do celular permite rolar horizontalmente. A API pode criar o lote fictício quando Presentation__SeedOnStart=true: a conta de autoria do lote é desativada dentro da mesma transação; não permite login. A carga não remove cadastros nem redefine o saldo de um ensaio anterior. Em colisão, a operação reverte sem mesclar registros alheios. A versão oficial com assinatura anterior é gerada pelo perfil Expo preview do projeto já existente.

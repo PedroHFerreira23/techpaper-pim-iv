@@ -25,3 +25,7 @@ outputs/rendered_abnt*/
 /output/
 /tmp/
 /gcm-diagnose.log
+
+.env.apresentacao
+__pycache__/
+*.pyc

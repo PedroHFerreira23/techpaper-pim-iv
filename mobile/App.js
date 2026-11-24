@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text as NativeText, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text as NativeText, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import Svg, { Circle } from 'react-native-svg';
-import { addItem, createApi, normalizeUrl, positiveInteger } from './src/api.mjs';
+import { addItem, createApi, normalizeUrl, positiveInteger, validadePadrao } from './src/api.mjs';
+import { Gestao, imprimirOrcamento } from './src/gestao';
 import { createSessionScope } from './src/session.mjs';
 
 // O endereço pertence à configuração técnica do aplicativo e nunca é solicitado ao usuário.
@@ -23,7 +24,7 @@ const parseApiDate = value => {
   const date = new Date(text); return Number.isNaN(date.getTime()) ? null : date;
 };
 const formatDateTime = value => { const date = parseApiDate(value); return date ? date.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : 'Data não informada'; };
-const tabs = ['Resumo', 'Produtos', 'Estoque', 'Orçamentos', 'Inclusão', 'Conta'];
+const tabs = role => ['Resumo', 'Produtos', 'Fornecedores', 'Estoque', 'Movimentações', 'Orçamentos', 'Relatórios', ...(role==='Admin'?['Usuários']:[]), 'Inclusão', 'Conta'];
 const categoryAliases = { caderno: 'Cadernos', cadernos: 'Cadernos', escrita: 'Escrita', caneta: 'Escrita', canetas: 'Escrita', lapis: 'Escrita', 'material escolar': 'Material escolar', 'materiais escolares': 'Material escolar', organizacao: 'Organização', arte: 'Artes', artes: 'Artes', papelaria: 'Papelaria', outro: 'Outros', outros: 'Outros' };
 const formatCategory = value => { const text = String(value || '').trim().replace(/\s+/g, ' '); if (!text) return 'Sem categoria'; const key = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return categoryAliases[key] || text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(); };
 const avatars = [
@@ -107,7 +108,8 @@ function TechPaper() {
   const [search, setSearch] = useState(''); const [selected, setSelected] = useState(null);
   const [tipo, setTipo] = useState('Entrada'); const [quantidade, setQuantidade] = useState('1'); const [motivo, setMotivo] = useState('');
   const [pending, setPending] = useState(null);
-  const [cliente, setCliente] = useState(''); const [validade, setValidade] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+  const [cliente, setCliente] = useState(''); const [validade, setValidade] = useState(validadePadrao());
+  const [editing,setEditing]=useState(null); const [obs,setObs]=useState('');
   const [cart, setCart] = useState([]); const [detail, setDetail] = useState(null);
   const [bannerIndex, setBannerIndex] = useState(0);
   const [relatoCategoria, setRelatoCategoria] = useState('Discriminacao');
@@ -136,9 +138,9 @@ function TechPaper() {
 
   function resetLocalState() {
     setData({ produtos: [], movimentacoes: [], orcamentos: [], relatos: [] });
-    setLastSync(null); setPending(null); setCart([]); setDetail(null); setCliente('');
+    setEditing(null); setObs(''); setLastSync(null); setPending(null); setCart([]); setDetail(null); setCliente('');
     setSelected(null); setSearch(''); setTipo('Entrada'); setQuantidade('1'); setMotivo('');
-    setValidade(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+    setValidade(validadePadrao());
     setRelatoCategoria('Discriminacao'); setRelatoDescricao(''); setTab('Resumo'); setNotice('');
     setBannerIndex(0); syncing.current = false; setRefreshing(false);
   }
@@ -203,6 +205,7 @@ function TechPaper() {
     try {
       const request = api(current);
       const [produtos, movimentacoes, orcamentos, relatos, user] = await Promise.all([request('produtos'), request('movimentacoes'), request('orcamentos'), request('relatos-inclusao'), request('usuarios/me')]);
+      const [fornecedores,usuarios]=await Promise.all([request('fornecedores'),user.role==='Admin'?request('usuarios'):Promise.resolve([])]);
       if (!scope.current(ticket)) return;
       const updated = { ...current, user, expiresAt: current.expiresAt || new Date(Date.now()+8*60*60*1000).toISOString() };
       const savedAt = new Date();
@@ -212,7 +215,7 @@ function TechPaper() {
       });
       if (!scope.current(ticket)) return;
       activeSession.current = updated; setSession(updated);
-      setData({ produtos, movimentacoes, orcamentos, relatos }); setLastSync(savedAt); setNotice('');
+      setData({ produtos, movimentacoes, orcamentos, relatos, fornecedores, usuarios }); setLastSync(savedAt); setNotice('');
     } catch (e) { await fail(e, current, ticket); }
     finally { if (scope.current(ticket)) { syncing.current = false; setRefreshing(false); } }
   }
@@ -271,7 +274,8 @@ function TechPaper() {
   async function saveQuote() {
     await run(async () => {
       if (!cliente.trim() || !cart.length || !/^\d{4}-\d{2}-\d{2}$/.test(validade)) throw new Error('Informe cliente, validade (AAAA-MM-DD) e pelo menos um item.');
-      const created = await api(session)('orcamentos', { method: 'POST', body: { cliente: cliente.trim(), validade, itens: cart } });
+      const created = await api(session)('orcamentos'+(editing?'/'+editing.id:''), { method: editing?'PUT':'POST', body: { cliente: cliente.trim(), validade, itens: cart, observacoes:obs, versao:editing?.versao||1 } });
+      setEditing(null);setObs('');
       setCart([]); setCliente(''); setDetail(created); await sync();
     });
   }
@@ -284,6 +288,8 @@ function TechPaper() {
   }
   const filtered = data.produtos.filter(p => `${p.nome} ${p.sku}`.toLowerCase().includes(search.toLowerCase()));
   const canApprove = ['Admin', 'Supervisor'].includes(session?.user.role);
+  const diaBR = value => new Date(value).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
+  const totalHoje = tipo => data.movimentacoes.filter(m=>m.tipo===tipo&&diaBR(m.dataHora)===diaBR(Date.now())).reduce((n,m)=>n+m.quantidade,0);
   const picker = <>
     <Field label="Pesquisar produto" value={search} onChangeText={setSearch} />
     {filtered.map(p => <Pressable key={p.id} accessibilityLabel={`${p.nome}, SKU ${p.sku}, saldo ${p.estoque}`} accessibilityRole="radio" accessibilityState={{ checked: selected === p.id, disabled: !!pending }} disabled={!!pending} onPress={() => setSelected(p.id)} style={[s.product, selected === p.id && s.selected]}>
@@ -319,9 +325,9 @@ function TechPaper() {
         {detail.itens.map(i => <Text key={i.id} style={s.row}>{i.quantidade} × {i.produtoNome} — {money(i.subtotal)}</Text>)}<Text style={s.subtitle}>{money(detail.total)}</Text>
         <Text style={s.muted}>Orçamentos não reservam nem baixam estoque.</Text>
         {canApprove && detail.status === 'Rascunho' && ['Aprovado', 'Cancelado'].map(status => <Button key={status} title={status === 'Aprovado' ? 'Aprovar orçamento' : 'Cancelar orçamento'} secondary={status === 'Cancelado'} disabled={busy} onPress={() => run(async () => { const updated = await api(session)(`orcamentos/${detail.id}/status`, { method: 'PATCH', body: { status, versao: detail.versao } }); setDetail({ ...detail, ...updated, itens: detail.itens }); await sync(); })} />)}
-        <Button title="Voltar à lista" secondary onPress={() => setDetail(null)} /></Card> : <>
-      {tab === 'Resumo' && <><Text style={s.muted}>Uma visão do que precisa de atenção.</Text><Card><Text style={s.metric}>{data.produtos.length}</Text><Text>Produtos cadastrados</Text></Card><Card><Text style={s.metric}>{data.produtos.filter(p => p.estoque < 20).length}</Text><Text>Produtos com estoque abaixo de 20</Text></Card><Card><Text style={s.metric}>{data.orcamentos.filter(o => o.status === 'Rascunho').length}</Text><Text>Orçamentos em rascunho</Text></Card><DashboardCharts produtos={data.produtos} movimentacoes={data.movimentacoes} />{pending && <Button title="Concluir movimentação pendente" onPress={() => setTab('Estoque')} />}</>}
-      {tab === 'Produtos' && <><Field label="Buscar por nome ou SKU" value={search} onChangeText={setSearch} />{filtered.map(p => <Card key={p.id}><Text style={s.subtitle}>{p.nome}</Text><Text style={s.muted}>{p.sku} · {formatCategory(p.categoria)}</Text><Text style={s.row}>{money(p.precoVenda)} · {p.estoque} unidades</Text><Text style={s.muted}>{p.fornecedor}</Text></Card>)}{!filtered.length && <Text>Nenhum produto encontrado.</Text>}</>}
+        <Text>{detail.observacoes}</Text><Button title="Imprimir / salvar PDF" secondary onPress={()=>run(()=>imprimirOrcamento(detail))}/>{detail.status==='Rascunho'&&(canApprove||detail.usuarioId===session.user.id)&&<Button title="Editar rascunho" onPress={()=>{setEditing({id:detail.id,versao:detail.versao});setCliente(detail.cliente);setObs(detail.observacoes||'');setValidade(detail.validade.slice(0,10));setCart(detail.itens.map(i=>({produtoId:i.produtoId,quantidade:i.quantidade})));setDetail(null);}}/>}<Button title="Voltar à lista" secondary onPress={() => setDetail(null)} /></Card> : <>
+      {tab === 'Resumo' && <><Text style={s.muted}>Uma visão do que precisa de atenção.</Text><Card><Text style={s.metric}>{data.produtos.length}</Text><Text>Produtos cadastrados</Text></Card><Card><Text style={s.metric}>{data.produtos.filter(p => p.estoque < 20).length}</Text><Text>Produtos com estoque abaixo de 20</Text></Card><Card><Text style={s.metric}>{data.orcamentos.filter(o => o.status === 'Rascunho').length}</Text><Text>Orçamentos em rascunho</Text></Card>{[['Fornecedores',data.fornecedores?.length??'—'],['Entradas hoje',totalHoje('Entrada')],['Saídas hoje',totalHoje('Saida')],['Valor em estoque',money(data.produtos.reduce((n,p)=>n+p.precoCusto*p.estoque,0))]].map(([nome,valor])=><Card key={nome}><Text style={s.metric}>{valor}</Text><Text>{nome}</Text></Card>)}<DashboardCharts produtos={data.produtos} movimentacoes={data.movimentacoes} />{pending && <Button title="Concluir movimentação pendente" onPress={() => setTab('Estoque')} />}</>}
+      {['Produtos','Fornecedores','Movimentações','Relatórios','Usuários'].includes(tab)&&<Gestao key={session.user.id+':'+tab} tab={tab} data={data} user={session.user} busy={busy} ui={{Card,Text,Field,Button,s}} operar={(fn,recarregar=false)=>run(async()=>{await fn(api(session));if(recarregar)await sync();})}/>}
       {tab === 'Estoque' && <>
         <Card><Text style={s.subtitle}>Registrar movimentação</Text>
           {pending ? <><Text style={s.notice}>Uma operação aguarda confirmação. A nova tentativa usa a mesma identificação para evitar duplicidade.</Text><Text>{pending.tipo} · {pending.quantidade} unidade(s) · Produto #{pending.produtoId}</Text></> : <>{picker}<View style={s.actions}>{['Entrada', 'Saida'].map(t => <Button key={t} title={`${tipo === t ? '✓ ' : ''}${t === 'Saida' ? 'Saída' : t}`} secondary={tipo !== t} onPress={() => setTipo(t)} />)}</View><Field label="Quantidade" value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" /><Field label="Motivo" value={motivo} onChangeText={setMotivo} maxLength={100} /></>}
@@ -329,22 +335,22 @@ function TechPaper() {
         </Card><Text style={s.subtitle}>Últimas movimentações</Text>{data.movimentacoes.slice(0, 30).map(m => <Card key={m.id}><Text style={s.label}>{m.tipo === 'Saida' ? 'Saída' : 'Entrada'} · {m.quantidade} × {m.produtoNome}</Text><Text>{m.motivo}</Text><Text style={s.muted}>{m.responsavel} · {formatDateTime(m.dataHora)}</Text></Card>)}
       </>}
       {tab === 'Orçamentos' && <>
-        <Card><Text style={s.subtitle}>Novo orçamento</Text><Field label="Cliente" value={cliente} onChangeText={setCliente} maxLength={150} /><Field label="Validade (AAAA-MM-DD)" value={validade} onChangeText={setValidade} maxLength={10} />{picker}
+        <Card><Text style={s.subtitle}>{editing?'Editar orçamento #'+editing.id:'Novo orçamento'}</Text>{editing&&<Button secondary title="Descartar edição" onPress={()=>{setEditing(null);setCart([]);setCliente('');setObs('');setValidade(validadePadrao());}}/>}<Field label="Cliente" value={cliente} onChangeText={setCliente} maxLength={150} /><Field label="Validade (AAAA-MM-DD)" value={validade} onChangeText={setValidade} maxLength={10} /><Field label="Observações" value={obs} onChangeText={setObs} maxLength={1000}/>{picker}
           <Field label="Quantidade do item" value={quantidade} onChangeText={setQuantidade} keyboardType="number-pad" /><Button title="Adicionar item" secondary disabled={!selected || busy} onPress={() => { try { setCart(addItem(cart, selected, positiveInteger(quantidade))); } catch (e) { setNotice(e.message); } }} />
           {cart.map(i => <View key={i.produtoId} style={s.row}><Text>{i.quantidade} × {data.produtos.find(p => p.id === i.produtoId)?.nome}</Text><Button title="Remover item" secondary onPress={() => setCart(cart.filter(x => x.produtoId !== i.produtoId))} /></View>)}
           <Text style={s.muted}>O servidor confirma os preços e o total ao salvar.</Text><Button title="Salvar orçamento" disabled={busy || !cart.length} onPress={saveQuote} />
         </Card><Text style={s.subtitle}>Orçamentos da equipe</Text>{data.orcamentos.map(o => <Card key={o.id}><Text style={s.label}>#{o.id} · {o.cliente}</Text><Text>{o.status} · {money(o.total)}</Text><Button title="Ver detalhes" secondary onPress={() => setDetail(o)} /></Card>)}
       </>}
       {tab === 'Inclusão' && <>
-        <Card><Text style={s.subtitle}>Respeito e acesso para toda a equipe</Text><Text style={s.row}>Interrompa atitudes discriminatórias, acolha quem relata e comunique situações com respeito e objetividade.</Text><Text style={s.row}>Valorize diferentes histórias, culturas, identidades e formas de participação. O TechPaper não utiliza raça, religião ou outros dados sensíveis nas operações da papelaria.</Text><Text style={s.muted}>O aplicativo oferece rótulos para leitores de tela, contraste de tema e consulta dos últimos dados sincronizados quando a conexão oscila.</Text></Card>
+        <Card><Text style={s.subtitle}>Respeito e acesso para toda a equipe</Text><Text style={s.row}>Interrompa atitudes discriminatórias, acolha quem relata e comunique situações com respeito e objetividade.</Text><Text style={s.row}>Valorize diferentes histórias, culturas, identidades e formas de participação. O TechPaper não utiliza raça, religião ou outros dados sensíveis nas operações da papelaria.</Text><Text style={s.muted}>O aplicativo oferece rótulos para leitores de tela, contraste de tema e consulta dos últimos dados sincronizados quando a conexão oscila.</Text><Button secondary title="Abrir portal com VLibras no navegador" onPress={()=>run(()=>Linking.openURL(API_URL))}/></Card>
         <Card><Text style={s.subtitle}>Canal reservado</Text><Text style={s.muted}>O relato será visível para você e para administradores responsáveis. Evite inserir dados pessoais de terceiros que não sejam necessários.</Text><Text style={s.label}>Assunto</Text><View accessibilityRole="radiogroup" accessibilityLabel="Assunto do relato" style={s.actions}>{Object.entries(reportCategories).map(([value,label])=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{checked:relatoCategoria===value}} onPress={()=>setRelatoCategoria(value)} style={[s.choice,relatoCategoria===value&&s.choiceSelected]}><Text style={s.choiceText}>{label}</Text></Pressable>)}</View><Field label="Descreva o ocorrido ou a barreira" value={relatoDescricao} onChangeText={setRelatoDescricao} multiline numberOfLines={6} maxLength={2000} textAlignVertical="top" /><Text style={s.muted}>{relatoDescricao.length}/2000 caracteres · mínimo de 20</Text><Button title={busy?'Enviando…':'Enviar relato reservado'} disabled={busy||relatoDescricao.trim().length<20} onPress={sendReport} /></Card>
-        <Text style={s.subtitle}>{session.user.role==='Admin'?'Relatos recebidos':'Meus relatos'}</Text>{data.relatos.map(item=><Card key={item.id}><Text style={s.label}>{reportCategories[item.categoria]||item.categoria}</Text>{item.usuarioNome?<Text style={s.muted}>Enviado por {item.usuarioNome}</Text>:null}<Text style={s.row}>{item.descricao}</Text><Text style={s.muted}>{formatDateTime(item.dataCriacao)} · {reportStatus[item.status]||item.status}</Text></Card>)}{!data.relatos.length?<Text>Nenhum relato registrado.</Text>:null}
+        <Text style={s.subtitle}>{session.user.role==='Admin'?'Relatos recebidos':'Meus relatos'}</Text>{data.relatos.map(item=><Card key={item.id}><Text style={s.label}>{reportCategories[item.categoria]||item.categoria}</Text>{item.usuarioNome?<Text style={s.muted}>Enviado por {item.usuarioNome}</Text>:null}<Text style={s.row}>{item.descricao}</Text><Text style={s.muted}>{formatDateTime(item.dataCriacao)} · {reportStatus[item.status]||item.status}</Text>{session.user.role==='Admin'&&['EmAnalise','Concluido'].filter(v=>v!==item.status).map(v=><Button key={v} secondary title={v==='EmAnalise'?'Colocar em análise':'Concluir'} disabled={busy} onPress={()=>run(async()=>{await api(session)('relatos-inclusao/'+item.id+'/status',{method:'PATCH',body:{status:v}});await sync();})}/>)}</Card>)}{!data.relatos.length?<Text>Nenhum relato registrado.</Text>:null}
       </>}
       {tab === 'Conta' && <><Card><View style={s.profile}><Avatar id={session.user.avatarId} /><View><Text style={s.subtitle}>{session.user.name}</Text><Text>{session.user.login}</Text><Text style={s.row}>Perfil: {session.user.role}</Text></View></View><Text style={s.label}>Escolha seu avatar</Text><View accessibilityRole="radiogroup" accessibilityLabel="Galeria de avatares" style={s.avatarGallery}>{avatars.map(item => <Pressable key={item.id} accessibilityLabel={item.label} accessibilityRole="radio" accessibilityState={{ checked: session.user.avatarId === item.id, disabled: busy }} disabled={busy} onPress={() => updatePreferences({ temaEscuro: darkMode, avatarId: item.id })} style={[s.avatarChoice, session.user.avatarId === item.id && s.avatarChoiceSelected]}><NativeText style={s.avatarChoiceSymbol}>{item.symbol}</NativeText></Pressable>)}</View><Button title={darkMode ? 'Usar tema claro' : 'Usar tema escuro'} accessibilityLabel={darkMode ? 'Ativar tema claro' : 'Ativar tema escuro'} disabled={busy} onPress={() => updatePreferences({ temaEscuro: !darkMode, avatarId: session.user.avatarId })} /><Text style={s.muted}>Tema e avatar ficam associados à sua conta e são sincronizados pelo servidor.</Text><Button title="Sair da conta" secondary disabled={busy} onPress={logout} /></Card><Card><Text style={s.subtitle}>Uma ferramenta para toda a equipe</Text><Text style={s.row}>Atendimento respeitoso e igualdade de acesso fazem parte do TechPaper. O avatar é uma representação escolhida pelo usuário; o sistema não registra raça, religião ou outros dados sensíveis.</Text><Text>Use os recursos de tamanho de fonte e leitor de tela do seu aparelho. Relate barreiras de uso ao responsável da equipe.</Text></Card></>}
       <EducationalBanner message={educationalMessages[bannerIndex]} />
       </>}
     </ScrollView></KeyboardAvoidingView>
-    <View accessibilityRole="tablist" style={s.tabs}>{tabs.map(t => <Pressable key={t} accessibilityLabel={`Abrir ${t}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} style={[s.tab, tab === t && s.activeTab]} onPress={() => { setTab(t); setDetail(null); }}><Text style={[s.tabText, tab === t && s.activeTabText]}>{t}</Text></Pressable>)}</View>
+    <View style={{maxHeight:70}}><ScrollView horizontal showsHorizontalScrollIndicator accessibilityRole="tablist" contentContainerStyle={s.tabs}>{tabs(session.user.role).map(t => <Pressable key={t} accessibilityLabel={`Abrir ${t}`} accessibilityRole="tab" accessibilityState={{ selected: tab === t }} style={[s.tab, tab === t && s.activeTab]} onPress={() => { setTab(t); setDetail(null); }}><Text style={[s.tabText, tab === t && s.activeTabText]}>{t}</Text></Pressable>)}</ScrollView></View>
   </SafeAreaView>);
 }
 /*
@@ -414,7 +420,7 @@ function createTheme(dark) {
     educationalBanner: { backgroundColor: dark ? '#243E4C' : '#E8F4F8', borderLeftWidth: 5, borderLeftColor: colors.primary, borderRadius: 12, padding: 18, gap: 6 },
     bannerTitle: { fontSize: 16, fontWeight: '800', color: colors.primary },
     bannerText: { fontSize: 15, lineHeight: 22 },
-    tabs: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: colors.surface, padding: 6, borderTopWidth: 1, borderTopColor: colors.border },
+    tabs: { flexDirection: 'row', backgroundColor: colors.surface, padding: 6, borderTopWidth: 1, borderTopColor: colors.border },
     tab: { flexGrow: 1, minHeight: 50, padding: 9, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
     activeTab: { backgroundColor: colors.secondary },
     tabText: { fontSize: 12, color: colors.muted },
