@@ -47,3 +47,9 @@ Correções no foco e menu móvel, validação/concorrência do orçamento, vali
 
 ## Apresentação integrada — versão móvel 1.7.0
 O celular passou a consultar fornecedores e histórico completo, administrar cadastros conforme o perfil, editar rascunhos, atualizar relatos como Admin e emitir CSV/impressão pelo Android. Atualizar no portal ou no app consulta a mesma API. O menu do celular permite rolar horizontalmente. A API pode criar o lote fictício quando Presentation__SeedOnStart=true: a conta de autoria do lote é desativada dentro da mesma transação; não permite login. A carga não remove cadastros nem redefine o saldo de um ensaio anterior. Em colisão, a operação reverte sem mesclar registros alheios. A versão oficial com assinatura anterior é gerada pelo perfil Expo preview do projeto já existente.
+
+## Tela de acesso do portal — 25/11/2026
+
+A tela de acesso mantém o formulário visível em janelas mais baixas e usa um cabeçalho compacto no celular. O menu lateral do desktop passa a rolar em janelas baixas, e a legenda pode quebrar para a linha seguinte no gráfico. Uma tentativa de login rejeitada mantém os campos e apresenta a mensagem no formulário. O portal distingue credencial rejeitada, limite de tentativas e falha ao carregar os dados após a criação da sessão.
+
+Validação em Chromium com o portal local em oito tamanhos, incluindo 320 × 568 e 740 × 360, e simulação de respostas 401 e 429, nova tentativa, menu móvel e logout. O serviço Render que estava no ar aceitou a sessão administrativa e retornou HTTP 200 nas consultas usadas pelo painel. A validação de produção foi feita pela API. A alteração não depende de migração nem de redefinição de senha.

@@ -31,3 +31,11 @@ test('erro de formulário é apresentado dentro do diálogo aberto',()=>{
  const h=harness();h.eval("modal.open=true;notify('Falha ao salvar');");const content=h.nodes.get('#modal-content');
  assert.equal(content.children.at(-1).textContent,'Falha ao salvar');assert.equal(h.nodes.get('#notice')?.textContent,undefined);
 });
+
+test('login rejeitado preserva o formulário para nova tentativa', async () => {
+ const h=harness(async()=>({ok:false,status:401,json:async()=>({message:'E-mail ou senha inválidos.'})}));
+ h.eval('let loginRenders=0;renderLogin=()=>{loginRenders++;};');
+ await assert.rejects(h.eval("api('usuarios/login',{method:'POST'})"), {status:401,message:'E-mail ou senha inválidos.'});
+ assert.equal(h.eval('loginRenders'),0);
+ assert.equal(h.eval('sessionRevision'),0);
+});

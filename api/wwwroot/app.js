@@ -65,7 +65,7 @@ async function api(path,options={}) {
   const response=await fetch('/api/'+path,{...options,signal:ctrl.signal,headers:{'Content-Type':'application/json','X-TechPaper-Client':'web',...options.headers},body:options.body===undefined?undefined:JSON.stringify(options.body)});
   const data=response.status===204?null:await response.json().catch(()=>null);
   if(revision!==sessionRevision)throw Object.assign(new Error('Esta sessão foi encerrada.'),{stale:true});
-  if(!response.ok){const e=new Error(data?.message||Object.values(data?.errors||{}).flat().join(' ')||`Operação não concluída (${response.status}).`);e.status=response.status;if(response.status===401){clearSession();}throw e;}
+  if(!response.ok){const e=new Error(data?.message||Object.values(data?.errors||{}).flat().join(' ')||`Operação não concluída (${response.status}).`);e.status=response.status;if(response.status===401 && state.user && path!=='usuarios/login'){clearSession();}throw e;}
   return data;
  }catch(e){if(e.name==='AbortError'||e instanceof TypeError)throw new Error('Sem confirmação do servidor. Verifique a conexão antes de tentar novamente.');throw e;}finally{clearTimeout(timer);}
 }
@@ -77,7 +77,66 @@ function form(fields,save,label='Salvar') {
  const submit=el('button',{type:'submit','aria-label':label},label);const f=el('form',{},fields,el('div',{class:'toolbar'},submit,button('Cancelar',()=>modal.close(),'secondary')));
  f.addEventListener('submit',async e=>{e.preventDefault();if(submit.disabled)return;submit.disabled=true;try{await save(Object.fromEntries(new FormData(f)));modal.close();await refresh();notify('Operação concluída.');}catch(err){notify(err.message);}finally{submit.disabled=false;}});return f;
 }
-function renderLogin(){applyTheme();app.replaceChildren(el('main',{class:'login',id:'main'},el('section',{class:'login-intro'},brandLockup('',true),el('h1',{},'Tudo em ordem.\nDo estoque ao orçamento.'),el('p',{},'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')),el('section',{class:'login-form'},el('span',{class:'eyebrow'},'BEM-VINDO À EQUIPE'),el('h2',{},'Acesse sua conta'),el('p',{class:'muted'},'Entre com o acesso fornecido pelo administrador.'),(()=>{const f=el('form',{},field('E-mail','login','','email',{autocomplete:'username'}),field('Senha','password','','password',{autocomplete:'current-password'}),el('button',{type:'submit','aria-label':'Entrar'},'Entrar'));f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button');b.disabled=true;try{const r=await api('usuarios/login',{method:'POST',body:Object.fromEntries(new FormData(f))});sessionRevision++;state.user=r.usuario;applyTheme();await refresh();}catch(err){notify(err.message);}finally{b.disabled=false;}};return f;})())));}
+function renderLogin() {
+ applyTheme();
+ const submit = el('button', {type: 'submit'}, 'Entrar');
+ const feedback = el('p', {class: 'note login-feedback', role: 'alert', hidden: true});
+ const loginForm = el('form', {},
+  field('E-mail', 'login', '', 'email', {autocomplete: 'username'}),
+  field('Senha', 'password', '', 'password', {autocomplete: 'current-password'}),
+  submit,
+  feedback
+ );
+
+ loginForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (submit.disabled) return;
+  feedback.hidden = true;
+  submit.disabled = true;
+  submit.textContent = 'Entrando…';
+  try {
+   const result = await api('usuarios/login', {
+    method: 'POST',
+    body: Object.fromEntries(new FormData(loginForm))
+   });
+   sessionRevision++;
+   state.user = result.usuario;
+   await refresh();
+  } catch (error) {
+   if (error.stale) return;
+   if (!loginForm.isConnected) {
+    notify(error.message);
+    return;
+   }
+   if (state.user) {
+    render();
+    notify('Sessão iniciada. Os dados do painel não carregaram. Use Atualizar para tentar novamente.');
+    return;
+   }
+   feedback.hidden = false;
+   feedback.textContent = error.status === 429
+    ? 'Muitas tentativas. Aguarde um minuto e tente novamente.'
+    : error.message;
+  } finally {
+   submit.disabled = false;
+   submit.textContent = 'Entrar';
+  }
+ });
+
+ const intro = el('section', {class: 'login-intro'},
+  el('div', {class: 'login-intro-content'},
+   brandLockup('', true),
+   el('h2', {}, 'Tudo em ordem.', el('br'), 'Do estoque ao orçamento.'),
+   el('p', {}, 'Um espaço para organizar sua papelaria, acompanhar a operação e conectar toda a equipe.')
+  )
+ );
+ const access = el('section', {class: 'login-form', 'aria-labelledby': 'login-title'},
+  el('h1', {id: 'login-title'}, 'Acesse sua conta'),
+  el('p', {class: 'muted'}, 'Entre com o acesso fornecido pelo administrador.'),
+  loginForm
+ );
+ app.replaceChildren(el('main', {class: 'login', id: 'main', tabindex: '-1'}, intro, access));
+}
 let refreshing=false;
 async function refresh(){if(refreshing)return;const revision=sessionRevision;refreshing=true;try{
  const names=['produtos','fornecedores','movimentacoes','orcamentos','relatos-inclusao',...(state.user?.role==='Admin'?['usuarios']:[])];
